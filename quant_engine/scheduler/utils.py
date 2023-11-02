@@ -32,10 +32,18 @@ def get_activate_task_process():
 
     import psutil
     try:
+        task_process = []
+        parent_pid = []
         for _p in psutil.process_iter():
             _cmd_lines = _p.cmdline()
             if "quant_engine" in _cmd_lines and "start_task" in _cmd_lines:
-                active_tasks.append(_p)
+                task_process.append(_p)
+                parent_pid.append(_p.ppid())
+
+        for _p in task_process:
+            if _p.pid in parent_pid:
+                continue
+            active_tasks.append(_p)
         return active_tasks
     except psutil.AccessDenied:
         print("检测到你没有管理员权限，当前进程需要管理员权限来检查运行中的实盘进程")

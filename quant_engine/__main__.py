@@ -52,17 +52,20 @@ def get_tasks(options):
     from .scheduler.utils import get_activate_task_process, parse_task_info
 
     active_tasks = get_activate_task_process()
-    print("当前活跃的实盘任务".center(30, "-"))
+
+    print("当前活跃的实盘任务进程".center(30, "-"))
     for _p in active_tasks:
-        print(_p.cmdline())
-        _task_info = parse_task_info(_p.cmdline())
+        _cmd = _p.cmdline()
+        _task_info = parse_task_info(_cmd)
         _task_info["pid"] = _p.pid
+        _task_info["cmd"] = _cmd
         print("名称: {name}\n"
               "pid: {pid}\n"
               "代码路径: {code}\n"
               "日志路径: {out}\n"
               "自定义环境变量: {env}\n"
-              "是否debug模式: {debug}\n\n".format(**_task_info))
+              "是否debug模式: {debug}\n"
+              "cmd: {cmd}\n\n".format(**_task_info))
 
 
 def stop_task(options):
