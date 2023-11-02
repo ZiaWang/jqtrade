@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
-
-
+import os
 import sys
-sys.path.append("/Users/wangzihao/work/quant_engine/")
 
 
-from quant_engine.scheduler.log import setup_logger
-setup_logger("DEBUG")
+def setup():
+    this_dir = os.path.abspath(os.path.dirname(__file__))
+    project_dir = os.path.join(this_dir, "..")
+    sys.path.append(project_dir)
+
+    from quant_engine.scheduler.log import setup_logger
+    setup_logger("DEBUG")
+
+
+setup()
