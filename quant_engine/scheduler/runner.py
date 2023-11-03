@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 
 from .loader import Loader
 from .strategy import Strategy
@@ -63,6 +64,8 @@ class TaskRunner(object):
 
         self._env = _parse_env(env) if env else {}
         os.environ.update(self._env)
+        if "PYTHONPATH" in self._env:
+            sys.path.extend(self._env["PYTHONPATH"].split(":"))
 
         self._debug = debug
 
