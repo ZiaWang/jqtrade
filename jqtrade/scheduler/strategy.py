@@ -5,7 +5,7 @@ from .event_source import EventSource
 from .exceptions import InvalidCall, InvalidParam
 from .event import create_event_class, EventPriority
 from .log import user_logger, sys_logger
-from .user_api import UserContext
+from .api import UserContext
 from .config import get_config
 
 config = get_config()
@@ -56,10 +56,16 @@ class Strategy(object):
         self.schedule()
 
     def make_apis(self):
-        # todo: 补充其他模块的API
+        # 调度模块相关API
         self._user_module.run_daily = self.run_daily
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
+
+        # account模块相关API
+        if config.SETUP_ACCOUNT:
+            from ..account import api as account_api
+            for _name in account_api.__all__:
+                setattr(self._user_module, _name, getattr(account_api, _name))
 
     def wrap_user_callback(self, callback):
         def _callback(event):

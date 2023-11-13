@@ -19,6 +19,10 @@ class Context(object):
         self._start = start or datetime.datetime.now()
         self._end = end
 
+        self._account = None
+        self._trade_gate = None
+        self._portfolio = None
+
         self.__class__._instance = self
 
     @property
@@ -68,3 +72,27 @@ class Context(object):
     def strategy_dt(self):
         """ 策略中当前逻辑事件，每次处理某个事件时更新，用于方便了解处理到哪个事件了 """
         return self._event_loop.strategy_dt
+
+    @property
+    def account(self):
+        return self._account
+
+    @account.setter
+    def account(self, acc):
+        self._account = acc
+
+    @property
+    def trade_gate(self):
+        return self._trade_gate
+
+    @trade_gate.setter
+    def trade_gate(self, gate):
+        self._trade_gate = gate
+
+    @property
+    def portfolio(self):
+        return self._portfolio
+
+    @portfolio.setter
+    def portfolio(self, p):
+        self._portfolio = p

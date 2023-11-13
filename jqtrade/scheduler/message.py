@@ -17,7 +17,7 @@ class Message(object):
 
     @property
     def sort_key(self):
-        return self.time, -self.priority, self._unique_num
+        return self.time, -self.priority, self.seq_number
 
     def __repr__(self):
         return "Message(%s)" % self.__dict__

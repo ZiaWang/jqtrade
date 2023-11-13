@@ -21,6 +21,9 @@ class SchedulerConfig(object):
             (datetime.time(13, 0), datetime.time(15, 0)),
         ]
 
+        # 是否加载内置account模块，默认加载
+        self.SETUP_ACCOUNT = True
+
     @classmethod
     def get_instance(cls):
         if cls._instance is None:

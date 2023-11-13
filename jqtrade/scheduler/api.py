@@ -14,3 +14,7 @@ class UserContext(object):
     @property
     def current_dt(self):
         return self.__ctx.current_dt
+
+    @property
+    def portfolio(self):
+        return self.__ctx.portfolio

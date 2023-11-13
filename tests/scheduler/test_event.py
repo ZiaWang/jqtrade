@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from quant_engine.scheduler.event import create_event_class, EventPriority, Event, _event_classes
+from jqtrade.scheduler.event import create_event_class, EventPriority, Event, _event_classes
 
 
 def test_create_event_class():

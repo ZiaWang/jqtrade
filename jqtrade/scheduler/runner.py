@@ -2,16 +2,18 @@
 import os
 import sys
 
+from importlib import import_module
+
 from .loader import Loader
 from .strategy import Strategy
 from .event_source import EventSourceScheduler
 from .loop import EventLoop
 from .bus import EventBus
 from .context import Context
-from .exceptions import RepeatedTask
+from .exceptions import RepeatedTask, ConfigError
 from .log import sys_logger, setup_file_logger, setup_logger
 from .utils import get_activate_task_process, parse_task_info
-from .config import setup_scheduler_config
+from .config import setup_scheduler_config, get_config as get_scheduler_config
 
 
 logger = sys_logger.getChild("runner")
@@ -89,6 +91,27 @@ class TaskRunner(object):
                           scheduler=EventSourceScheduler(),
                           loader=Loader(self._code_file),
                           debug=self._debug)
+
+        scheduler_config = get_scheduler_config()
+        if scheduler_config.SETUP_ACCOUNT:
+            from ..account.account import Account
+            from ..account.portfolio import Portfolio
+            from ..account.config import setup_account_config, get_config as get_account_config
+            if self._config:
+                setup_account_config(self._config)
+            account_config = get_account_config()
+            if not account_config.TRADE_GATE:
+                raise ConfigError("未配置 trade gate，")
+
+            module_name, gate_name = account_config.TRADE_GATE.rsplit(".", 1)
+            module = import_module(module_name)
+            trade_gate = getattr(module, gate_name)()
+            context.trade_gate = trade_gate
+            account = Account(context)
+            context.account = account
+            account.setup()
+            portfolio = Portfolio(account)
+            context.portfolio = portfolio
 
         strategy = Strategy(context)
         strategy.setup()

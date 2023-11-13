@@ -2,8 +2,8 @@
 import random
 from concurrent.futures import ThreadPoolExecutor
 
-from quant_engine.scheduler.queue import PriorityQueue, ThreadSafeQueue, QueueEmptyError
-from quant_engine.scheduler.event import Event
+from jqtrade.scheduler.queue import PriorityQueue, ThreadSafeQueue, QueueEmptyError
+from jqtrade.scheduler.event import Event
 
 
 class TestEvent1(Event):

@@ -2,11 +2,17 @@
 import os
 import datetime
 
-from quant_engine.scheduler.config import get_config
-from quant_engine.scheduler.log import set_log_context
+from importlib import import_module
 
-scheduler_config = get_config()
+from jqtrade.scheduler.config import get_config as get_scheduler_config
+from jqtrade.account.trade_gate import AbsTradeGate
+from jqtrade.scheduler.log import set_log_context, sys_logger
+
+scheduler_config = get_scheduler_config()
 scheduler_config.ENABLE_HISTORY_START = True
+
+
+logger = sys_logger.getChild("test_strategy")
 
 
 def get_setting(path, setting):
@@ -34,13 +40,85 @@ def parse_dt(dt):
         return dt
 
 
+class FakeTradeGate(AbsTradeGate):
+    def setup(self):
+        logger.info("setup")
+
+    def order(self, req):
+        logger.info("order. req=%s" % req)
+
+    def cancel_order(self, req):
+        logger.info("cancel_order. req=%s" % req)
+
+    def on_confirmed(self, rsp):
+        logger.info("on_confirmed, rsp=%s" % rsp)
+
+    def on_deal(self, rsp):
+        logger.info("on_deal, rsp=%s" % rsp)
+
+    def on_rejected(self, rsp):
+        logger.info("on_rejected, rsp=%s" % rsp)
+
+    def on_canceled(self, rsp):
+        logger.info("on_canceled, rsp=%s" % rsp)
+
+    def sync_balance(self):
+        logger.info("sync_balance run")
+        ret = \
+            {
+                "cash":
+                    {
+                            "total_assert": 10000,       # 必需字段，总资产
+                            "available_cash": 5000,     # 必需字段，可用资金
+                            "locked_cash": 1000,        # 必需字段，冻结资金
+                    },
+                "positions":
+                    [
+                        {
+                            "code": "000001.XSHE",           # 必需字段，持仓标的
+                            "amount": 1000,                  # 必需字段，持仓数量
+                            "available_amount": 100,         # 必需字段，可用数量
+                            "avg_cost": 11.11,               # 必需字段，持仓成本
+
+                            "side": "long",                  # 可选字段，long | short
+                            "last_price": 11.10,             # 可选字段，最新价格
+                            "position_value": 111000,        # 可选字段，持仓对应的当前市值
+                        },
+                    ],
+            }
+        return ret
+
+    def sync_orders(self):
+        logger.info("sync_orders run")
+        ret = [
+                {
+                    "order_id": '1234',                                             # 必填字段，内部委托id
+                    "code": "000001.XSHE",                                          # 必填字段，标的代码
+                    "price": 11.11,                                                 # 必填字段，委托价格
+                    "amount": 1000,                                                 # 必填字段，委托数量
+                    "action": "open",                                               # 必填字段，订单行为，开仓open、平仓close
+                    "status": "filled",                                              # 必填字段，订单状态
+                    "style": "market",                                               # 必填字段，订单类型，市价单market，限价单limit
+                    "create_time": datetime.datetime(2023, 11, 6, 10, 30, 33),       # 必填字段，订单创建事件
+
+                    "entrust_time": datetime.datetime(2023, 11, 6, 10, 30, 34),      # 可选字段，订单委托确认时间
+                    "confirm_id": '123455',                                          # 可选字段，券商委托ID
+                    "filled_amount": datetime.datetime(2023, 11, 6, 10, 30, 34),     # 可选字段，已成数量
+                    "canceled_amount": datetime.datetime(2023, 11, 6, 10, 30, 34),   # 可选字段，已撤数量
+                    "deal_balance": datetime.datetime(2023, 11, 6, 10, 30, 34),      # 可选字段，已成交金额
+                    "avg_cost": datetime.datetime(2023, 11, 6, 10, 30, 34),          # 可选字段，成交均价
+                }
+            ]
+        return ret
+
+
 def run_strategy(path):
-    from quant_engine.scheduler.loop import EventLoop
-    from quant_engine.scheduler.bus import EventBus
-    from quant_engine.scheduler.event_source import EventSourceScheduler
-    from quant_engine.scheduler.loader import Loader
-    from quant_engine.scheduler.context import Context
-    from quant_engine.scheduler.strategy import Strategy
+    from jqtrade.scheduler.loop import EventLoop
+    from jqtrade.scheduler.bus import EventBus
+    from jqtrade.scheduler.event_source import EventSourceScheduler
+    from jqtrade.scheduler.loader import Loader
+    from jqtrade.scheduler.context import Context
+    from jqtrade.scheduler.strategy import Strategy
 
     options = get_setting(path, "__options__")
 
@@ -60,6 +138,19 @@ def run_strategy(path):
                       debug=options.get("debug", False),
                       start=start,
                       end=end)
+
+    if scheduler_config.SETUP_ACCOUNT:
+        from jqtrade.account.account import Account
+        from jqtrade.account.portfolio import Portfolio
+
+        context.trade_gate = FakeTradeGate()
+
+        account = Account(context)
+        context.account = account
+        account.setup()
+
+        portfolio = Portfolio(account)
+        context.portfolio = portfolio
 
     set_log_context(context)
 

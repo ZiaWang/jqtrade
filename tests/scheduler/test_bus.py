@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 
-from quant_engine.scheduler.bus import EventBus
-from quant_engine.scheduler.event import Event
+from jqtrade.scheduler.bus import EventBus
+from jqtrade.scheduler.event import Event
 
 
 def test_init():

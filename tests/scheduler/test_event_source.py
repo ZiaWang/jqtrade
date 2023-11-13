@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from quant_engine.scheduler.event_source import EventSource, EventSourceScheduler, TimeExprParser
-from quant_engine.scheduler.event import Event
-from quant_engine.scheduler.config import get_config
+from jqtrade.scheduler.event_source import EventSource, EventSourceScheduler, TimeExprParser
+from jqtrade.scheduler.event import Event
+from jqtrade.scheduler.config import get_config
 
 
 config = get_config()

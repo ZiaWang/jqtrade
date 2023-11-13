@@ -24,3 +24,8 @@ class InvalidCall(UserError):
 class InvalidParam(UserError):
     """ 用户参数错误 """
     pass
+
+
+class ConfigError(InternalError):
+    """ 配置错误 """
+    pass
