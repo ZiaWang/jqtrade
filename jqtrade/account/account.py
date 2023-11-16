@@ -3,11 +3,10 @@ import datetime
 
 from ..scheduler.log import sys_logger
 
-from .order import Order, OrderSide, OrderAction, OrderStyle
+from .order import Order, OrderSide, OrderAction, OrderStatus
 from .position import Position
-from .utils import OrderIDProducer
 from .config import get_config
-from .trade_gate import OrderRequest, CancelOrderRequest
+from .utils import generate_unique_number
 
 
 config = get_config()
@@ -76,8 +75,6 @@ class Account(AbsAccount):
         # 锁定资金
         self._locked_cash = 0
 
-        self._order_id_producer = OrderIDProducer()
-
     def setup(self):
         # 初始化券商交易接口
         self._ctx.trade_gate.setup()
@@ -117,12 +114,38 @@ class Account(AbsAccount):
 
         self._ctx.scheduler.schedule(event_source)
 
+    def order(self, code, amount, style, side):
+        order_id = generate_unique_number()
+        action = OrderAction.close if amount < 0 else OrderAction.open
+        order_obj = Order(code=code, price=style.price, amount=abs(amount), action=action,
+                          order_id=order_id, style=style, create_time=datetime.datetime.now(),
+                          status=OrderStatus.new)
+        self._orders[order_id] = order_obj
+        try:
+            self._ctx.trade_gate.order(order_obj)
+        except Exception as e:
+            logger.exception("内部下单失败，code=%s, amount=%s, style=%s, side=%s, error=%s" % (
+                code, amount, style, side, e
+            ))
+            order_obj.on_rejected("内部下单失败, error=%s" % e)
+
+    def cancel_order(self, order_id):
+        try:
+            if order_id not in self._orders:
+                logger.error("内部撤单失败，本地找不到内部委托id为%s的委托" % order_id)
+                return
+
+            self._ctx.trade_gate.cancel_order(order_id)
+        except Exception as e:
+            logger.exception("内部撤单异常，order_id=%s, error=%s" % (order_id, e))
+            return
+
     def sync_balance(self, *args, **kwargs):
         try:
             account_info = self._ctx.trade_gate.sync_balance()
 
             cash_info = account_info.get("cash", {})
-            self._total_assert = cash_info.get("total_assert") or self._total_assert
+            self._total_assert = cash_info.get("total_asset") or self._total_assert
             self._available_cash = cash_info.get("available_cash") or self._available_cash
             self._locked_cash = cash_info.get("locked_cash") or self._locked_cash
 
@@ -150,52 +173,89 @@ class Account(AbsAccount):
             orders = self._ctx.trade_gate.sync_orders()
 
             for _order_info in orders:
-                _style = OrderStyle.get_style(_order_info.pop("style"), _order_info["price"])
-                _order = Order(
-                    style=_style,
-                    order_id=_order_info.pop("order_id"),
-                    code=_order_info.pop("code"),
-                    price=_order_info.pop("price"),
-                    amount=_order_info.pop("amount"),
-                    action=_order_info.pop("action"),
-                    status=_order_info.pop("status"),
-                    create_time=_order_info.pop("create_time"),
-                    **_order_info
-                )
-                self._orders[_order.order_id] = _order
+                _order_id = _order_info["order_id"]
+                _local_order = self._orders.get(_order_id)
+                _remote_order = Order.load(**_order_info)
+                if _local_order is None:
+                    logger.error("同步订单时发现本地不存在的订单: %s" % _order_info)
+                    self._orders[_order_id] = _remote_order
+                    continue
+
+                if _remote_order == _local_order:
+                    continue
+
+                self._orders[_order_id] = _remote_order
+                self.on_order_updated(_local_order, _remote_order)
+
         except Exception as e:
             logger.exception("同步订单失败，error=%s" % e)
 
-    def order(self, code, amount, style, side):
-        order_id = self._order_id_producer.create_id()
-        action = OrderAction.close if amount < 0 else OrderAction.open
-        order_obj = Order(code=code, price=style.price, amount=abs(amount), action=action)
-        order_obj.on_request_order(order_id)
-        self._orders[order_id] = order_obj
-        try:
-            self._ctx.trade_gate.order(OrderRequest(
-                order_id=order_id,
-                code=code,
-                style=style,
-                amount=amount,
-                side=side
-            ))
-        except Exception as e:
-            logger.exception("内部下单失败，code=%s, amount=%s, style=%s, side=%s, error=%s" % (
-                code, amount, style, side, e
-            ))
-            order_obj.on_rejected(None, err_msg="内部下单失败, error=%s" % e)
+    def on_order_updated(self, local_order, remote_order):
+        self._notify_changed(local_order, remote_order)
 
-    def cancel_order(self, order_id):
-        try:
-            if order_id not in self._orders:
-                logger.error("内部撤单失败，本地找不到内部委托id为%s的委托" % order_id)
-                return
+    def _notify_changed(self, local_order: Order, remote_order: Order):
+        if local_order.status != remote_order.status:
+            if remote_order.status == OrderStatus.open:
+                self._notify_confirmed(local_order, remote_order)
+            elif remote_order.status in (OrderStatus.filling, OrderStatus.filled):
+                self._notify_deal(local_order, remote_order)
+            elif remote_order.status == OrderStatus.canceling:
+                self._notify_canceling(local_order, remote_order)
+            elif remote_order.status == OrderStatus.partly_canceled:
+                self._notify_canceled(local_order, remote_order)
+            elif remote_order.status == OrderStatus.canceled:
+                self._notify_canceled(local_order, remote_order)
+            elif remote_order.status == OrderStatus.rejected:
+                self._notify_rejected(local_order, remote_order)
+            else:
+                # new, do nothing
+                pass
+        else:
+            if remote_order.status == OrderStatus.filling:
+                self._notify_deal(local_order, remote_order)
 
-            self._ctx.trade_gate.cancel_order(CancelOrderRequest(order_id=order_id))
-        except Exception as e:
-            logger.exception("内部撤单异常，order_id=%s, error=%s" % (order_id, e))
+    @staticmethod
+    def _notify_confirmed(local_order, remote_order):
+        if local_order.status != OrderStatus.new:
             return
+        logger.info("订单已报，id：%s，股票代码：%s，委托数量：%s，委托价格：%s"
+                    % (remote_order.order_id, remote_order.code, remote_order.amount, remote_order.price))
+
+    @staticmethod
+    def _notify_deal(local_order, remote_order):
+        if local_order.has_finished():
+            return
+
+        if remote_order.status == OrderStatus.filling:
+            logger.info("订单部分成交，id：%s，股票代码：%s，委托数量：%s，委托价格：%s, 已成数量：%s，成交均价：%s，成交金额：%s"
+                        % (remote_order.order_id, remote_order.code, remote_order.amount, remote_order.price,
+                           remote_order.filled_amount, remote_order.avg_cost, remote_order.deal_balance))
+        else:
+            logger.info("订单全部成交，id：%s，股票代码：%s，委托数量：%s，委托价格：%s, 已成数量：%s，成交均价：%s，成交金额：%s"
+                        % (remote_order.order_id, remote_order.code, remote_order.amount, remote_order.price,
+                           remote_order.filled_amount, remote_order.avg_cost, remote_order.deal_balance))
+
+    @staticmethod
+    def _notify_canceling(local_order, remote_order):
+        if local_order.has_finished():
+            return
+        logger.info("撤单已报，被撤委托id：%s" % remote_order.order_id)
+
+    @staticmethod
+    def _notify_canceled(local_order, remote_order):
+        if local_order.has_finished():
+            return
+        logger.info("订单已撤单，id：%s，股票代码：%s，委托数量：%s，成交数量：%s，撤单数量：%s"
+                    % (remote_order.order_id, remote_order.code, remote_order.amount,
+                       remote_order.filled_amount, remote_order.canceled_amount))
+
+    @staticmethod
+    def _notify_rejected(local_order, remote_order):
+        if local_order.has_finished():
+            return
+        logger.info("订单被废单，id：%s，股票代码：%s，委托数量：%s，委托价格：%s，废单原因：%s"
+                    % (remote_order.order_id, remote_order.code, remote_order.amount,
+                       remote_order.price, remote_order.err_msg))
 
     @property
     def orders(self):

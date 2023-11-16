@@ -5,6 +5,11 @@ import datetime
 def process_initialize(context):
     log.info("process_initialize run.")
 
+    set_options(
+        account_no="123456",
+        order_dir="/Users/wangzihao/jqtrade/data"
+    )
+
     dt = datetime.datetime.now() + datetime.timedelta(seconds=10)
 
     run_daily(func, dt.strftime("%H:%M:%S"))

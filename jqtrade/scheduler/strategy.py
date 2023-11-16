@@ -42,6 +42,8 @@ class Strategy(object):
 
         self._schedule_count = 0
 
+        self._account_info = None
+
     def setup(self):
         logger.debug("strategy setup")
         self.make_apis()
@@ -55,11 +57,17 @@ class Strategy(object):
 
         self.schedule()
 
+        # 账户相关初始化
+        if config.SETUP_ACCOUNT:
+            self._ctx.trade_gate.setup()
+            self._ctx.account.setup()
+
     def make_apis(self):
         # 调度模块相关API
         self._user_module.run_daily = self.run_daily
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
+        self.user_module.set_options = self.set_options
 
         # account模块相关API
         if config.SETUP_ACCOUNT:
@@ -128,3 +136,20 @@ class Strategy(object):
     @property
     def user_module(self):
         return self._user_module
+
+    def set_options(self, **kwargs):
+        if not self._is_scheduler_allowed:
+            raise InvalidCall("set_options只能在process_initialize中调用")
+
+        if not config.SETUP_ACCOUNT:
+            logger.warn("由于策略设置SETUP_ACCOUNT=False，因此set_options调用将被忽略")
+            return
+
+        required_fields = ("account_no",)
+        for _f in required_fields:
+            if _f not in kwargs:
+                raise InvalidParam("set_options必须提供资金账户的id")
+
+        if config.SETUP_ACCOUNT:
+            self._account_info = kwargs
+            self._ctx.trade_gate.set_options(**kwargs)

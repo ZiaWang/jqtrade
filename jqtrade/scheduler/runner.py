@@ -86,7 +86,8 @@ class TaskRunner(object):
             setup_scheduler_config(self._config)
 
         event_loop = EventLoop()
-        context = Context(event_bus=EventBus(),
+        context = Context(task_name=self._task_name,
+                          event_bus=EventBus(),
                           loop=event_loop,
                           scheduler=EventSourceScheduler(),
                           loader=Loader(self._code_file),
@@ -109,7 +110,6 @@ class TaskRunner(object):
             context.trade_gate = trade_gate
             account = Account(context)
             context.account = account
-            account.setup()
             portfolio = Portfolio(account)
             context.portfolio = portfolio
 

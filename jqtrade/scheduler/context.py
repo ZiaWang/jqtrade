@@ -9,7 +9,8 @@ class Context(object):
 
     _instance = None
 
-    def __init__(self, event_bus, loop, scheduler, loader, debug, start=None, end=None):
+    def __init__(self, task_name, event_bus, loop, scheduler, loader, debug, start=None, end=None):
+        self._task_name = task_name
         self._event_bus = event_bus
         self._event_loop = loop
         self._scheduler = scheduler
@@ -96,3 +97,7 @@ class Context(object):
     @portfolio.setter
     def portfolio(self, p):
         self._portfolio = p
+
+    @property
+    def task_name(self):
+        return self._task_name

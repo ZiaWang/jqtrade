@@ -29,3 +29,8 @@ class InvalidParam(UserError):
 class ConfigError(InternalError):
     """ 配置错误 """
     pass
+
+
+class TimeOut(InternalError):
+    """ 超时 """
+    pass

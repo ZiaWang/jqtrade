@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ..scheduler.exceptions import InvalidParam
+from ..scheduler.exceptions import InvalidParam, InvalidCall
 from ..scheduler.context import Context
 from ..scheduler.log import sys_logger
 
@@ -7,11 +7,6 @@ from .order import OrderSide, OrderStatus, OrderStyle, MarketOrderStyle, LimitOr
 
 
 logger = sys_logger.getChild("account.api")
-
-
-def set_account(account_id):
-    # TODO
-    pass
 
 
 def _check_code(code):
@@ -244,5 +239,4 @@ __all__ = [
     "batch_submit_orders", "batch_cancel_orders",
     "get_orders",
     "sync_balance", "sync_orders",
-    "set_account"
 ]

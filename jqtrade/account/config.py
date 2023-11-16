@@ -22,8 +22,7 @@ class AccountConfig(object):
         ]
 
         # 默认使用的trade_gate，配置成空字符串或None时，不加载account模块
-        # self.TRADE_GATE = "quant_engine.account.trade_gate.AnXinTradeGate"
-        self.TRADE_GATE = "jqtrade.account.trade_gate.FakeTradeGate"
+        self.TRADE_GATE = "jqtrade.account.trade_gate.AnXinDMATradeGate"
 
     @classmethod
     def get_instance(cls):

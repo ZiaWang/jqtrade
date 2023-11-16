@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pytest
 import datetime
 
 from jqtrade.account.order import Order, OrderSide, OrderStyle, OrderAction, \
@@ -27,6 +28,10 @@ def test_order_instance():
     for _attr in order_info.keys():
         assert getattr(order1, _attr) == order_info[_attr]
 
+    order2 = Order.load(**order_info)
+    for _attr in order_info.keys():
+        assert getattr(order1, _attr) == getattr(order2, _attr)
+
 
 def test_invalid_side():
     assert OrderSide.is_valid_side("long")
@@ -49,3 +54,40 @@ def test_invalid_action():
 
     assert not OrderAction.is_valid_action("o")
     assert not OrderAction.is_valid_action("bad")
+
+
+def test_get_status():
+    for _status in OrderStatus.__members__.keys():
+        assert getattr(OrderStatus, _status) == OrderStatus.get_status(_status)
+
+    with pytest.raises(ValueError):
+        OrderStatus.get_status("bad status")
+
+
+def test_get_side():
+    for _side in OrderSide.__members__.keys():
+        assert getattr(OrderSide, _side) == OrderSide.get_side(_side)
+
+    with pytest.raises(ValueError):
+        OrderSide.get_side("bad side")
+
+
+def test_get_action():
+    for _action in OrderAction.__members__.keys():
+        assert getattr(OrderAction, _action) == OrderAction.get_action(_action)
+
+    with pytest.raises(ValueError):
+        OrderAction.get_action("bad action")
+
+
+def test_get_style():
+    style = OrderStyle.get_style("market", price=0)
+    assert isinstance(style, MarketOrderStyle)
+    assert style.price == 0
+
+    style = OrderStyle.get_style("limit", price=10)
+    assert isinstance(style, LimitOrderStyle)
+    assert style.price == 10
+
+    with pytest.raises(ValueError):
+        OrderStyle.get_style("bad style", price=10)
