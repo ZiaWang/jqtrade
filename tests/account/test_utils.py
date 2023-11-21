@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import pytest
 
 from jqtrade.account.utils import generate_unique_number, simple_retry
 
@@ -22,15 +23,20 @@ def test_simple_retry():
         retry_count[0] += 1
         raise ValueError("test")
     func1 = simple_retry()(func)
-    func1()
+    with pytest.raises(ValueError):
+        func1()
     assert retry_count[0] == 4
 
     retry_count = [0]
     func2 = simple_retry(on_exception=lambda e: isinstance(e, TypeError))(func)
-    func2()
+
+    with pytest.raises(ValueError):
+        func2()
+
     assert retry_count[0] == 1
 
     retry_count = [0]
     func2 = simple_retry(on_exception=lambda e: isinstance(e, ValueError))(func)
-    func2()
+    with pytest.raises(ValueError):
+        func2()
     assert retry_count[0] == 4

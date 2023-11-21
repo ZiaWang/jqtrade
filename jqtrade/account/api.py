@@ -80,10 +80,12 @@ def get_orders(order_id=None, code=None, status=None):
     if status:
         _check_status(status)
 
-    order_id = str(order_id)
-    orders = Context.get_instance().account.orders
+    acc_orders = Context.get_instance().account.orders
+
+    orders = acc_orders.values()
     if order_id:
-        orders = [orders[order_id], ] if order_id in orders else []
+        order_id = str(order_id)
+        orders = [acc_orders[order_id], ] if order_id in acc_orders else []
 
     if code:
         orders = [o for o in orders if o.code == code]

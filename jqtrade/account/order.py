@@ -40,9 +40,9 @@ class OrderStatus(Enum):
     def is_valid_status(cls, status):
         return status in cls.__members__
 
-    @property
-    def finished_status(self):
-        return self.filled, self.partly_canceled, self.canceled, self.rejected
+    @classmethod
+    def finished_status(cls):
+        return cls.filled, cls.partly_canceled, cls.canceled, cls.rejected
 
     @classmethod
     def get_status(cls, status):
@@ -291,7 +291,7 @@ class Order(object):
         return self._err_msg
 
     def has_finished(self):
-        return self._status in OrderStatus.finished_status
+        return self._status in OrderStatus.finished_status()
 
     def on_rejected(self, msg):
         self._status = OrderStatus.rejected

@@ -24,6 +24,13 @@ class AccountConfig(object):
         # 默认使用的trade_gate，配置成空字符串或None时，不加载account模块
         self.TRADE_GATE = "jqtrade.account.trade_gate.AnXinDMATradeGate"
 
+        # 同步订单异常重试参数
+        # 支持：max_attempts最大尝试次数、delay_seconds重试间隔
+        self.SYNC_RETRY_KWARGS = {
+            "max_attempts": 3,
+            "delay_seconds": 0.15
+        }
+
     @classmethod
     def get_instance(cls):
         if cls._instance is None:

@@ -28,12 +28,12 @@ def setup_logger(level="INFO"):
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_handler.setFormatter(SystemLogFormatter(fmt, datefmt='%Y-%m-%d %H:%M:%S,%f'))
 
-    stderr_handler = logging.StreamHandler(stream=sys.stderr)
-    stderr_handler.setFormatter(SystemLogFormatter(fmt, datefmt='%Y-%m-%d %H:%M:%S,%f'))
-    stderr_handler.setLevel('ERROR')
+    # stderr_handler = logging.StreamHandler(stream=sys.stderr)
+    # stderr_handler.setFormatter(SystemLogFormatter(fmt, datefmt='%Y-%m-%d %H:%M:%S,%f'))
+    # stderr_handler.setLevel('ERROR')
 
     logging.getLogger().addHandler(stdout_handler)
-    logging.getLogger().addHandler(stderr_handler)
+    # logging.getLogger().addHandler(stderr_handler)
     logging.getLogger().setLevel(level)
 
 

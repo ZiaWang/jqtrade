@@ -17,14 +17,17 @@ def simple_retry(on_exception=None, max_attempts=3, delay_seconds=0.1):
     def _wrap(func):
         def _retry(*args, **kwargs):
             attempts = 0
-            while attempts <= max_attempts:
+            while True:
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
                     if on_exception and not on_exception(e):
-                        break
-                    else:
-                        time.sleep(delay_seconds)
+                        raise
+
+                    if attempts >= max_attempts:
+                        raise
+
+                    time.sleep(delay_seconds)
                     attempts += 1
         return _retry
     return _wrap

@@ -77,6 +77,7 @@ class Account(AbsAccount):
 
     def setup(self):
         # 初始化券商交易接口
+        logger.info("setup")
         self._ctx.trade_gate.setup()
 
         if config.SYNC_BALANCE or config.SYNC_ORDER:
@@ -86,6 +87,7 @@ class Account(AbsAccount):
             self.sync_orders()
 
     def _setup_sync_timer(self):
+        logger.info("setup account sync timer")
         # 初始化定时任务事件
         from ..scheduler.event_source import EventSource
         from ..scheduler.event import create_event_class, EventPriority
@@ -115,19 +117,22 @@ class Account(AbsAccount):
         self._ctx.scheduler.schedule(event_source)
 
     def order(self, code, amount, style, side):
-        order_id = generate_unique_number()
+        order_id = str(generate_unique_number())
         action = OrderAction.close if amount < 0 else OrderAction.open
         order_obj = Order(code=code, price=style.price, amount=abs(amount), action=action,
                           order_id=order_id, style=style, create_time=datetime.datetime.now(),
                           status=OrderStatus.new)
         self._orders[order_id] = order_obj
         try:
+            logger.info("提交订单，订单id：%s，code：%s，price：%s，amount：%s，action：%s，style：%s"
+                        % (order_id, code, style.price, amount, action, style))
             self._ctx.trade_gate.order(order_obj)
         except Exception as e:
-            logger.exception("内部下单失败，code=%s, amount=%s, style=%s, side=%s, error=%s" % (
+            logger.exception("内部下单异常，code=%s, amount=%s, style=%s, side=%s, error=%s" % (
                 code, amount, style, side, e
             ))
-            order_obj.on_rejected("内部下单失败, error=%s" % e)
+            order_obj.on_rejected("内部下单异常, error=%s" % e)
+        return order_id
 
     def cancel_order(self, order_id):
         try:
@@ -135,6 +140,7 @@ class Account(AbsAccount):
                 logger.error("内部撤单失败，本地找不到内部委托id为%s的委托" % order_id)
                 return
 
+            logger.info("提交撤单，被撤订单id：%s" % order_id)
             self._ctx.trade_gate.cancel_order(order_id)
         except Exception as e:
             logger.exception("内部撤单异常，order_id=%s, error=%s" % (order_id, e))
@@ -173,11 +179,11 @@ class Account(AbsAccount):
             orders = self._ctx.trade_gate.sync_orders()
 
             for _order_info in orders:
-                _order_id = _order_info["order_id"]
+                _order_id = str(_order_info["order_id"])
                 _local_order = self._orders.get(_order_id)
                 _remote_order = Order.load(**_order_info)
                 if _local_order is None:
-                    logger.error("同步订单时发现本地不存在的订单: %s" % _order_info)
+                    logger.error("从trade_gate加载到订单: %s" % _order_info)
                     self._orders[_order_id] = _remote_order
                     continue
 
@@ -193,7 +199,7 @@ class Account(AbsAccount):
     def on_order_updated(self, local_order, remote_order):
         self._notify_changed(local_order, remote_order)
 
-    def _notify_changed(self, local_order: Order, remote_order: Order):
+    def _notify_changed(self, local_order, remote_order):
         if local_order.status != remote_order.status:
             if remote_order.status == OrderStatus.open:
                 self._notify_confirmed(local_order, remote_order)

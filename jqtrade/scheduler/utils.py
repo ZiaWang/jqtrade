@@ -35,10 +35,18 @@ def get_activate_task_process():
         task_process = []
         parent_pid = []
         for _p in psutil.process_iter():
-            _cmd_lines = _p.cmdline()
-            if "quant_engine" in _cmd_lines and "start_task" in _cmd_lines:
-                task_process.append(_p)
-                parent_pid.append(_p.ppid())
+            try:
+                _cmd_lines = _p.cmdline()
+                if "jqtrade" in _cmd_lines and "start_task" in _cmd_lines:
+                    task_process.append(_p)
+                    parent_pid.append(_p.ppid())
+            except psutil.AccessDenied:
+                if 'python' in _p.name():
+                    raise
+                else:
+                    # windows有一些系统进程，即使有管理员权限，p.cmdline仍会报错，这部分进程忽略
+                    # linux没有此问题
+                    pass
 
         for _p in task_process:
             if _p.pid in parent_pid:

@@ -42,7 +42,7 @@ class Strategy(object):
 
         self._schedule_count = 0
 
-        self._account_info = None
+        self._options = None
 
     def setup(self):
         logger.debug("strategy setup")
@@ -56,11 +56,6 @@ class Strategy(object):
             self._is_scheduler_allowed = False
 
         self.schedule()
-
-        # 账户相关初始化
-        if config.SETUP_ACCOUNT:
-            self._ctx.trade_gate.setup()
-            self._ctx.account.setup()
 
     def make_apis(self):
         # 调度模块相关API
@@ -150,6 +145,10 @@ class Strategy(object):
             if _f not in kwargs:
                 raise InvalidParam("set_options必须提供资金账户的id")
 
+        self._options = kwargs
+
         if config.SETUP_ACCOUNT:
-            self._account_info = kwargs
             self._ctx.trade_gate.set_options(**kwargs)
+
+            # 账户相关初始化
+            self._ctx.account.setup()

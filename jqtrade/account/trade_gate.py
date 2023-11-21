@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import time
 import json
+import shutil
 import datetime
 import portalocker
 
@@ -15,14 +17,16 @@ from ..scheduler.context import Context
 from ..scheduler.exceptions import InternalError, InvalidParam, TimeOut
 from ..scheduler.config import get_config as get_scheduler_config
 
-from .order import OrderSide, MarketOrderStyle, Order, OrderAction, LimitOrderStyle, OrderStatus
+from .order import OrderSide, MarketOrderStyle, OrderStatus, OrderAction
 from .utils import simple_retry
+from .config import get_config as get_account_config
 
 
 logger = sys_logger.getChild("trade_gate")
 
 
 scheduler_config = get_scheduler_config()
+account_config = get_account_config()
 
 
 class AttrDict(object):
@@ -167,7 +171,8 @@ class AbsTradeGate(object):
 
 class AnXinDMATradeGate(AbsTradeGate):
     ACCOUNT_TYPES = {
-        "stock": "UMO",     # 普通股票账户
+        "stock": "UF0",     # 普通股票账户
+        # "stock": "AT0",     # 普通股票账户
     }
 
     TRADE_SIDES = {
@@ -205,6 +210,11 @@ class AnXinDMATradeGate(AbsTradeGate):
     }
 
     DATA_DIR = os.path.join(scheduler_config.ROOT_DIR, "data")
+
+    ORDER_CSV_HEADER = "updTime,custBatchNo,acctType,acct,symbol,tradeSide," \
+                       "targetQty,algoId,priceType,ticks,highLimitPrice,lowLimitPrice"
+
+    CANCEL_CSV_HEADER = "updTime,custBatchNo"
 
     def __init__(self):
         super(AnXinDMATradeGate, self).__init__()
@@ -247,7 +257,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                       acct_type, acct_no,
                       self._encode_security(user_order.code)]
 
-        if user_order.amount > 0:
+        if user_order.action == OrderAction.open:
             order_info.append(self.TRADE_SIDES["B"])
         else:
             order_info.append(self.TRADE_SIDES["S"])
@@ -256,7 +266,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         order_info.append(self.ALGO_ID)
 
         if isinstance(user_order.style, MarketOrderStyle):
-            if user_order.amount > 0:
+            if user_order.action == OrderAction.open:
                 order_info.extend(["P6", 0, 0, 0])     # 涨停价
             else:
                 order_info.extend(["P7", 0, 0, 0])     # 跌停价
@@ -266,7 +276,9 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         order_info = [str(i) for i in order_info]
         order_line = ",".join(order_info) + os.linesep
-        self._write(self._order_csv, order_line)
+        self._write(self._order_csv, order_line, header=self.ORDER_CSV_HEADER)
+
+        logger.info("订单已提交到文件单，订单id：%s" % user_order.order_id)
 
         self._orders[user_order.order_id] = user_order.json()
 
@@ -274,14 +286,17 @@ class AnXinDMATradeGate(AbsTradeGate):
         now = datetime.datetime.now()
         order_info = [now.strftime("%H%M%S.%f"), str(order_id)]
         order_line = ",".join(order_info) + os.linesep
-        self._write(self._cancel_csv, order_line)
+        self._write(self._cancel_csv, order_line, header=self.CANCEL_CSV_HEADER)
+        logger.info("撤单已提交到文件单，订单id：%s" % order_id)
 
-    def _write(self, file, line, mode="a"):
+    def _write(self, file, line, mode="a", header=None):
         start = time.time()
         while True:
             with open(file, mode) as fp:
                 try:
                     portalocker.lock(fp, portalocker.LOCK_EX | portalocker.LOCK_NB)  # no block
+                    if fp.tell() == 0 and header:
+                        line = header + os.linesep + line
                     fp.write(line)
                     break
                 except BlockingIOError:
@@ -298,19 +313,33 @@ class AnXinDMATradeGate(AbsTradeGate):
             raise FileNotFoundError("找不到资产信息文件单：%s，"
                                     "请检查one quant是否启动或文件单是否开启定时导出模式" % self._assert_info_csv)
 
-        asset_info = self._read_csv(self._assert_info_csv).loc[0]
-        data["cash"] = {
-            "total_asset": float(asset_info["totalAsset"]),
-            "available_cash": float(asset_info["enabledBalance"]),
-            "locked_cash": float(asset_info["currentBalance"]) - float(asset_info["enabledBalance"]),
-        }
+        acct_no = self._options.get("account_no")
+        if not acct_no:
+            raise InvalidParam("未设置account_no信息，请使用set_account设置资金账号")
+
+        acct_no = str(acct_no)
+        asset_infos = self._read_csv(self._assert_info_csv, dtype={"acct": str, "exchange": str})
+        for _asset_info in asset_infos.itertuples():
+            if _asset_info.acct != acct_no:
+                continue
+
+            if not pd.isna(_asset_info.exchange):
+                continue
+
+            data["cash"] = {
+                "total_asset": float(_asset_info.totalAsset),
+                "available_cash": float(_asset_info.enabledBalance),
+                "locked_cash": float(_asset_info.currentBalance) - float(_asset_info.enabledBalance),
+            }
 
         if not os.path.exists(self._position_info_csv):
             raise FileNotFoundError("找不到持仓信息文件单：%s，"
                                     "请检查one quant是否启动或文件单是否开启定时导出模式" % self._position_info_csv)
         data["positions"] = []
-        position_info = self._read_csv(self._position_info_csv)
+        position_info = self._read_csv(self._position_info_csv, dtype={"acct": str, "symbol": str})
         for _pos in position_info.itertuples():
+            if _pos.acct != acct_no:
+                continue
 
             # 最后一行
             if pd.isna(_pos.symbol):
@@ -330,11 +359,17 @@ class AnXinDMATradeGate(AbsTradeGate):
         return data
 
     @staticmethod
-    @simple_retry(on_exception=lambda e: isinstance(e, (OSError, ParserError)))
+    @simple_retry(on_exception=lambda e: isinstance(e, (FileNotFoundError, OSError, ParserError)),
+                  **account_config.SYNC_RETRY_KWARGS)
     def _read_csv(*args, **kwargs):
+        path = args[0]
+        if not os.path.exists(path):
+            raise FileNotFoundError(path)
         df = pd.read_csv(*args, **kwargs)
+        if len(df) <= 1:
+            raise OSError("检测到文件不完整：%s" % path)
         if not df.loc[len(df)-1].isna().all():
-            raise OSError("file not complete")
+            raise OSError("检测到文件不完整：%s" % path)
         return df
 
     @staticmethod
@@ -355,13 +390,19 @@ class AnXinDMATradeGate(AbsTradeGate):
         else:
             raise ValueError("invalid code: %s" % code)
 
-    def sync_orders(self, notify=False):
+    def sync_orders(self):
         pre_offset = self._order_update_offset
-        with open(self._order_update_csv, "r", encoding="gbk") as rf:
+        coding = self._options.get("coding", sys.getfilesystemencoding())
+
+        if not os.path.exists(self._order_update_csv):
+            raise FileNotFoundError("找不到订单信息文件单：%s，"
+                                    "请检查one quant是否启动或文件单是否开启定时导出模式" % self._order_update_csv)
+
+        with open(self._order_update_csv, "r", encoding=coding) as rf:
             rf.seek(pre_offset)
             while True:
                 try:
-                    _line = rf.readline()
+                    _line = rf.readline().strip()
                     if not _line:
                         break
 
@@ -371,7 +412,8 @@ class AnXinDMATradeGate(AbsTradeGate):
 
                     _items = [_s.strip() for _s in _line.split(",")]
                     if len(_items) != len(self.ORDER_LINE_COLS):
-                        raise ParserError("invalid line, offset=%s, line=%s" % (rf.tell(), _line))
+                        # raise ParserError("invalid line, offset=%s, line=%s" % (rf.tell(), _line))
+                        break
 
                     order_line = self.ORDER_LINE_CLS(*_items)
 
@@ -393,9 +435,9 @@ class AnXinDMATradeGate(AbsTradeGate):
         return data
 
     def _update_order(self, order, order_line):
-        order["status"] = self._parse_status(order_line.status)
+        order["status"] = self._parse_status(order_line.status).value
         order["entrust_time"] = datetime.datetime.strptime(order_line.orderDate + order_line.orderTime,
-                                                           "%Y%m%d%H%M%S")
+                                                           "%Y%m%d%H%M%S").strftime("%Y-%m-%d %H:%M:%S.%f")
         order["confirm_id"] = order_line.orderNo
         order["filled_amount"] = order_line.filledQty
         order["deal_balance"] = order_line.filledAmt
@@ -404,23 +446,34 @@ class AnXinDMATradeGate(AbsTradeGate):
         order["err_msg"] = order_line.text
 
     def _save_orders(self):
-
-        with open(self._data_file, "w") as wf:
+        tmp_file = self._data_file + ".tmp"
+        with open(tmp_file, "w") as wf:
             json.dump(self._orders, wf)
+        shutil.move(tmp_file, self._data_file)
 
     def _load_orders(self):
+        logger.info("从本地缓存文件恢复策略当日订单信息，data_file：%s" % self._data_file)
         if not os.path.exists(self._data_file):
+            logger.info("本地无策略当日订单缓存文件，忽略加载历史订单信息，data_file：%s" % self._data_file)
             return
 
-        with open(self._data_file, "r") as rf:
-            self._orders = json.load(rf)
+        try:
+            with open(self._data_file, "r") as rf:
+                orders = json.load(rf)
+                for _order_id, _order_info in orders.items():
+                    logger.info("加载订单，id：%s，order_info：%s" % (_order_id, _order_info))
+                self._orders = orders
+        except Exception as e:
+            logger.exception("从本地缓存文件恢复策略当日订单信息失败，error=%s" % e)
 
     def _parse_status(self, status):
         if status not in self.STATUS_MAP:
-            raise ParserError("unknown status: %s" % status)
+            raise ParserError("无效订单状态：%s" % status)
         return self.STATUS_MAP[status]
 
     def setup(self):
+        logger.info("setup trade gate")
+
         if not os.path.exists(self.DATA_DIR):
             os.makedirs(self.DATA_DIR)
 
@@ -430,6 +483,9 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         if not os.path.exists(order_dir):
             raise FileNotFoundError("文件单目录不存在（%s），请检查是否已开启安信one quant并打开文件单导出选项" % order_dir)
+
+        logger.info("程序缓存数据路径: %s" % self.DATA_DIR)
+        logger.info("安信one quant文件单路径: %s" % order_dir)
 
         date_s = self._date.strftime("%Y%m%d")
         self._order_csv = os.path.join(order_dir, "algoOrder_%s.csv" % date_s)
