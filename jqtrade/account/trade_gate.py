@@ -211,18 +211,12 @@ class AnXinDMATradeGate(AbsTradeGate):
     def __init__(self):
         super(AnXinDMATradeGate, self).__init__()
 
-        self._date = datetime.date.today()
-        self._order_csv = self._date.strftime("algoOrder_%%%m%d.csv")
-        self._cancel_csv = self._date.strftime("algoOrderStop_%%%m%d.csv")
-        self._order_result_csv = self._date.strftime("execResult_%Y%m%d.csv")
-        self._order_update_csv = self._date.strftime("orderUpdate_%Y%m%d.csv")
-        self._trade_update_csv = self._date.strftime("tradeUpdate_%Y%m%d.csv")
-        self._assert_info_csv = self._date.strftime("assertInfo_%Y%m%d.csv")
-        self._position_info_csv = self._date.strftime("positionInfo_%Y%m%d.csv")
-
         # 持久化存储策略与订单映射关系，用于重启加载恢复订单
         self._data_dir = None
         self._data_file = None
+
+        # 文件单目录
+        self._order_dir = None
 
         # 缓存当日订单. key: order_id, value: dict
         self._orders = {}
@@ -528,9 +522,19 @@ class AnXinDMATradeGate(AbsTradeGate):
         logger.info("setup trade gate")
         self._options = options
 
+        self._order_dir = self._options.get("order_dir", self.DEFAULT_ORDER_DIR)
+        logger.info(f"安信one quant文件单路径: {self._order_dir}")
+        if not os.path.exists(self._order_dir):
+            raise FileNotFoundError(f"文件单目录不存在（{self._order_dir}），请检查是否已开启安信one quant并打开文件单导出选项")
+
         ctx = Context.get_instance()
         runtime_dir = options.get("runtime_dir", scheduler_config.RUNTIME_DIR)
+
         self._data_dir = os.path.join(runtime_dir, "data")
+        logger.info(f"程序缓存数据路径: {self._data_dir}")
+        if not os.path.exists(self._data_dir):
+            os.makedirs(self._data_dir)
+
         self._data_file = os.path.join(self._data_dir, f"{ctx.task_name}_{self._date.strftime('%Y%m%d')}.json")
 
         self._file_coding = self._options.get("file_encoding", sys.getfilesystemencoding())
@@ -542,23 +546,36 @@ class AnXinDMATradeGate(AbsTradeGate):
         self._wait_lock_internal = options.get("wait_lock_internal", self.WAIT_LOCK_INTERNAL)
         self._wait_lock_time_out = options.get("wait_lock_time_out", self.WAIT_LOCK_TIME_OUT)
 
-        if not os.path.exists(self._data_dir):
-            os.makedirs(self._data_dir)
-
-        order_dir = self._options.get("order_dir", self.DEFAULT_ORDER_DIR)
-        if not os.path.exists(order_dir):
-            raise FileNotFoundError(f"文件单目录不存在（{order_dir}），请检查是否已开启安信one quant并打开文件单导出选项")
-
-        logger.info(f"程序缓存数据路径: {self._data_dir}")
-        logger.info(f"安信one quant文件单路径: {order_dir}")
-
-        date_s = self._date.strftime("%Y%m%d")
-        self._order_csv = os.path.join(order_dir, f"algoOrder_{date_s}.csv")
-        self._cancel_csv = os.path.join(order_dir, f"algoOrderStop_{date_s}.csv")
-        self._order_result_csv = os.path.join(order_dir, f"execResult_{date_s}.csv")
-        self._order_update_csv = os.path.join(order_dir, f"orderUpdate_{date_s}.csv")
-        self._trade_update_csv = os.path.join(order_dir, f"tradeUpdate_{date_s}.csv")
-        self._assert_info_csv = os.path.join(order_dir, f"assetInfo_{date_s}.csv")
-        self._position_info_csv = os.path.join(order_dir, f"positionInfo_{date_s}.csv")
-
         self._load_orders()
+
+    @property
+    def _date(self):
+        return Context.get_instance().current_dt.date()
+
+    @property
+    def _order_csv(self):
+        return os.path.join(self._order_dir, f"algoOrder_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _cancel_csv(self):
+        return os.path.join(self._order_dir, f"algoOrderStop_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _order_result_csv(self):
+        return os.path.join(self._order_dir, f"execResult_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _order_update_csv(self):
+        return os.path.join(self._order_dir, f"orderUpdate_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _trade_update_csv(self):
+        return os.path.join(self._order_dir, f"tradeUpdate_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _assert_info_csv(self):
+        return os.path.join(self._order_dir, f"assetInfo_{self._date.strftime('%Y%m%d')}.csv")
+
+    @property
+    def _position_info_csv(self):
+        return os.path.join(self._order_dir, f"positionInfo_{self._date.strftime('%Y%m%d')}.csv")

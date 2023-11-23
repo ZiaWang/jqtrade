@@ -187,11 +187,11 @@ class UserOrder(object):
     
     @property
     def status(self):
-        return self.__order.status
+        return self.__order.status.value
     
     @property
     def side(self):
-        return self.__order.side
+        return self.__order.side.value
 
     @property
     def style(self):
@@ -215,7 +215,7 @@ class UserOrder(object):
 
     @property
     def action(self):
-        return self.__order.action
+        return self.__order.action.value
 
     @property
     def order_id(self):
@@ -247,8 +247,8 @@ class UserOrder(object):
 
     def __str__(self):
         return f"UserOrder(order_id={self.order_id}, code={self.code}, amount={self.amount}, " \
-               f"style={self.style}), status={self.status}, filled_amount={self.filled_amount}, " \
-               f"avg_cost={self.avg_cost}, deal_balance={self.deal_balance}, " \
+               f"style={self.style}), status={self.status}, action={self.action}, side={self.side}, " \
+               f"filled_amount={self.filled_amount}, avg_cost={self.avg_cost}, deal_balance={self.deal_balance}, " \
                f"canceled_amount={self.canceled_amount}, create_time={self.create_time}"
 
 
@@ -257,11 +257,11 @@ class UserPosition(object):
         self.__position = sys_position
 
     @property
-    def code(self):
+    def security(self):
         return self.__position.code
 
     @property
-    def amount(self):
+    def total_amount(self):
         return self.__position.amount
 
     @property
@@ -269,31 +269,36 @@ class UserPosition(object):
         return self.__position.locked_amount
 
     @property
-    def available_amount(self):
+    def closeable_amount(self):
         return self.__position.available_amount
 
     @property
     def avg_cost(self):
         return self.__position.avg_cost
 
-    hold_cost = avg_cost
+    acc_avg_cost = avg_cost
 
     @property
     def side(self):
-        return self.__position.side
+        return self.__position.side.value
 
     @property
     def last_price(self):
         return self.__position.last_price
 
+    price = last_price
+
     @property
     def position_value(self):
         return self.__position.position_value
 
+    value = position_value
+
     def __str__(self):
-        return f"UserPosition(code={self.code}, amount={self.amount}, locked_amount={self.locked_amount}, " \
-               f"available_amount={self.available_amount}, avg_cost={self.avg_cost}, side={self.side}, " \
-               f"last_price={self.last_price}, position_value={self.position_value})"
+        return f"UserPosition(security={self.security}, total_amount={self.total_amount}, " \
+               f"locked_amount={self.locked_amount}, closeable_amount={self.closeable_amount}, " \
+               f"avg_cost={self.avg_cost}, side={self.side}, last_price={self.last_price}, " \
+               f"position_value={self.position_value})"
 
 
 __all__ = [
