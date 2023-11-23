@@ -38,4 +38,4 @@ def check_sync_orders(context):
     sync_orders()
 
     for _order in get_orders():
-        print("UserOrder: %s" % _order)
+        log.info("UserOrder: %s" % _order)

@@ -35,6 +35,6 @@ class Portfolio(object):
         return self.__account.locked_cash
 
     def __str__(self):
-        return "Portfolio(total_assert=%s, available_assert=%s, locked_cash=%s, " \
-               "long_positions=%s, short_positions=%s)" % (self.total_assert, self.available_cash, self.locked_cash,
-                                                           self.long_positions, self.short_positions)
+        return f"Portfolio(total_assert={self.total_assert}, available_assert={self.available_cash}, " \
+               f"locked_cash={self.locked_cash}, long_positions={self.long_positions}, " \
+               f"short_positions={self.short_positions}"

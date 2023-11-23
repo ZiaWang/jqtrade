@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 
-from .log import sys_logger
+from ..common.log import sys_logger
 
 
 logger = sys_logger.getChild("bus")

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from .exceptions import InternalError
+from ..common.exceptions import InternalError
 
 
 class Context(object):

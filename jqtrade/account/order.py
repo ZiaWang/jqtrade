@@ -3,7 +3,7 @@ import datetime
 
 from enum import Enum
 
-from ..scheduler.log import sys_logger
+from ..common.log import sys_logger
 
 from .utils import parse_dt
 
@@ -300,12 +300,10 @@ class Order(object):
     def __eq__(self, other):
         return (
             self._status == other.status
-            and self._entrust_time == other.entrust_time
             and self._confirm_id == other.confirm_id
             and self._filled_amount == other.filled_amount
             and self._canceled_amount == other.canceled_amount
             and self._deal_balance == other.deal_balance
             and self._avg_cost == other.avg_cost
             and self._commission == other.commission
-            and self._err_msg == other.err_msg
         )

@@ -18,7 +18,7 @@ class SystemLogFormatter(logging.Formatter):
         return s
 
 
-# 默认的日志格式
+# default logger format
 fmt = '[%(asctime)s] [%(levelname)s] [%(process)d] [%(name)s] %(message)s'
 
 
@@ -27,13 +27,13 @@ def setup_logger(level="INFO"):
 
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_handler.setFormatter(SystemLogFormatter(fmt, datefmt='%Y-%m-%d %H:%M:%S,%f'))
+    logging.getLogger().addHandler(stdout_handler)
 
     # stderr_handler = logging.StreamHandler(stream=sys.stderr)
     # stderr_handler.setFormatter(SystemLogFormatter(fmt, datefmt='%Y-%m-%d %H:%M:%S,%f'))
     # stderr_handler.setLevel('ERROR')
-
-    logging.getLogger().addHandler(stdout_handler)
     # logging.getLogger().addHandler(stderr_handler)
+
     logging.getLogger().setLevel(level)
 
 
@@ -64,8 +64,6 @@ def set_log_context(context):
         handler.addFilter(ContextFilter())
 
 
-# 系统日志对象
 sys_logger = logging.getLogger("engine")
 
-# 用户日志对象
 user_logger = logging.getLogger("user")

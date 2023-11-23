@@ -4,14 +4,15 @@ import sys
 
 from importlib import import_module
 
+from ..common.exceptions import TaskError, ConfigError
+from ..common.log import sys_logger, setup_file_logger, setup_logger
+
 from .loader import Loader
 from .strategy import Strategy
 from .event_source import EventSourceScheduler
 from .loop import EventLoop
 from .bus import EventBus
 from .context import Context
-from .exceptions import RepeatedTask, ConfigError
-from .log import sys_logger, setup_file_logger, setup_logger
 from .utils import get_activate_task_process, parse_task_info
 from .config import setup_scheduler_config, get_config as get_scheduler_config
 
@@ -53,7 +54,7 @@ class TaskRunner(object):
         self._code_file = code_file
 
         if _exist_repeated_task(task_name):
-            raise RepeatedTask("task(%s) already exists" % task_name)
+            raise TaskError("task(%s) already exists" % task_name)
 
         self._task_name = task_name
 

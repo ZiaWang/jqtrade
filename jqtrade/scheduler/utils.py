@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import datetime
-
-
-def dt_to_milliseconds(dt):
-    return int(dt.timestamp() * 1000 + dt.microsecond / 1000)
-
-
-def milliseconds_to_dt(milliseconds):
-    return datetime.datetime.fromtimestamp(milliseconds / 1000.)
-
 
 def parse_task_info(cmd_line):
     info = {"debug": False, "env": None, "out": None}

@@ -19,9 +19,12 @@ def process_initialize(context):
     log.info("long_positions length:  %s" % len(context.portfolio.long_positions))
     log.info("short_positions length： %s" % len(context.portfolio.short_positions))
 
-    # run_daily(do_order, (datetime.datetime.now() + datetime.timedelta(seconds=10)).strftime("%H:%M:%S"))
-    # run_daily(do_cancel, (datetime.datetime.now() + datetime.timedelta(seconds=60)).strftime("%H:%M:%S"))
-    run_daily(check_orders, (datetime.datetime.now() + datetime.timedelta(seconds=20)).strftime("%H:%M:%S"))
+    now = datetime.datetime.now()
+    for i in range(20):
+        order_dt = now + datetime.timedelta(minutes=i, seconds=0)
+        cancel_dt = now + datetime.timedelta(minutes=i, seconds=30)
+        run_daily(do_order, order_dt.strftime("%H:%M:%S"))
+        run_daily(do_cancel, cancel_dt.strftime("%H:%M:%S"))
 
 
 g = {}
@@ -30,21 +33,13 @@ g = {}
 def do_order(context):
     log.info("do_order run.")
 
-    # order_id = order("300248.XSHE", 300, LimitOrderStyle(10.20))
-    # order_id = order("300248.XSHE", 400, MarketOrderStyle())
-
-    order_id = order("300248.XSHE", 50000, LimitOrderStyle(10.07))
+    order_id = order("300248.XSHE", 100, LimitOrderStyle(10.0))
     log.info("用户下单，order id：%s" % order_id)
-
     g["order_id"] = order_id
 
 
 def do_cancel(context):
-    log.info("cancel_order run.")
-    cancel_order(g["order_id"])
+    log.info("do_cancel run.")
 
-
-def check_orders(context):
-    log.info("check_orders run.")
-    for _order in get_orders():
-        log.info("查询本地订单：%s" % _order._UserOrder__order.__dict__)
+    if "order_id" in g:
+        cancel_order(g["order_id"])

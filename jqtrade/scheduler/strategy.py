@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import datetime
 
+from ..common.exceptions import InvalidCall, InvalidParam
+from ..common.log import user_logger, sys_logger
+
 from .event_source import EventSource
-from .exceptions import InvalidCall, InvalidParam
 from .event import create_event_class, EventPriority
-from .log import user_logger, sys_logger
 from .api import UserContext
 from .config import get_config
 
@@ -42,6 +43,8 @@ class Strategy(object):
 
         self._schedule_count = 0
 
+        self._account_options = None
+
         self._options = None
 
     def setup(self):
@@ -55,6 +58,10 @@ class Strategy(object):
             self._user_module.process_initialize(self._user_ctx)
             self._is_scheduler_allowed = False
 
+        use_account = self._options.get("use_account", config.SETUP_ACCOUNT)
+        if use_account:
+            self._ctx.account.setup(self._account_options)
+
         self.schedule()
 
     def make_apis(self):
@@ -62,7 +69,8 @@ class Strategy(object):
         self._user_module.run_daily = self.run_daily
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
-        self.user_module.set_options = self.set_options
+        self._user_module.set_options = self.set_options
+        self._user_module.set_account = self.set_account
 
         # account模块相关API
         if config.SETUP_ACCOUNT:
@@ -132,23 +140,23 @@ class Strategy(object):
     def user_module(self):
         return self._user_module
 
+    def set_account(self, **kwargs):
+        if not self._is_scheduler_allowed:
+            raise InvalidCall("set_account只能在process_initialize中调用")
+
+        if not config.SETUP_ACCOUNT:
+            logger.warn("由于策略设置SETUP_ACCOUNT=False，因此set_account调用将被忽略")
+            return
+
+        required_fields = ("account_no", )
+        for _f in required_fields:
+            if _f not in kwargs:
+                raise InvalidParam("set_account必须提供资金账户的id")
+
+        self._account_options = kwargs
+
     def set_options(self, **kwargs):
         if not self._is_scheduler_allowed:
             raise InvalidCall("set_options只能在process_initialize中调用")
 
-        if not config.SETUP_ACCOUNT:
-            logger.warn("由于策略设置SETUP_ACCOUNT=False，因此set_options调用将被忽略")
-            return
-
-        required_fields = ("account_no",)
-        for _f in required_fields:
-            if _f not in kwargs:
-                raise InvalidParam("set_options必须提供资金账户的id")
-
         self._options = kwargs
-
-        if config.SETUP_ACCOUNT:
-            self._ctx.trade_gate.set_options(**kwargs)
-
-            # 账户相关初始化
-            self._ctx.account.setup()

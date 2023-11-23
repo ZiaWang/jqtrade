@@ -25,7 +25,7 @@ class SchedulerConfig(object):
         self.SETUP_ACCOUNT = True
 
         # 程序目录，存放自定义配置和一些运行时依赖数据
-        self.ROOT_DIR = os.path.abspath(os.path.expanduser("~/jqtrade"))
+        self.RUNTIME_DIR = os.path.abspath(os.path.expanduser("~/jqtrade"))
 
     @classmethod
     def get_instance(cls):

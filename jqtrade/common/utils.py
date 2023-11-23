@@ -43,3 +43,11 @@ def parse_dt(dt):
             return datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
     else:
         raise ValueError("invalid dt: %s" % dt)
+
+
+def dt_to_milliseconds(dt):
+    return int(dt.timestamp() * 1000 + dt.microsecond / 1000)
+
+
+def milliseconds_to_dt(milliseconds):
+    return datetime.datetime.fromtimestamp(milliseconds / 1000.)

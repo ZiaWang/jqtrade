@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from ..scheduler.exceptions import InvalidParam, InvalidCall
+from ..common.exceptions import InvalidParam
+from ..common.log import sys_logger
 from ..scheduler.context import Context
-from ..scheduler.log import sys_logger
 
 from .order import OrderSide, OrderStatus, OrderStyle, MarketOrderStyle, LimitOrderStyle
 
@@ -10,37 +10,39 @@ logger = sys_logger.getChild("account.api")
 
 
 def _check_code(code):
-    if not (code[-4:] in ("XSHE", "XSHG") or code[:-5].isdigit()):
-        raise InvalidParam("标的代码错误: %s" % code)
+    if not (code[-4:] in ("XSHE", "XSHG") and code[:-5].isdigit()):
+        raise InvalidParam(f"标的代码错误: {code}")
 
 
 def _check_amount(amount):
     if not isinstance(amount, int) or amount == 0:
-        raise InvalidParam("委托数量错误，只能是非零整数：%s" % amount)
+        raise InvalidParam(f"委托数量错误，只能是非零整数：{amount}")
 
 
 def _check_style(style):
     if not OrderStyle.is_valid_style(style):
-        raise InvalidParam("style参数错误，只能是MarketOrderStyle, LimitOrderStyle类型的实例: %s" % style)
+        raise InvalidParam(f"style参数错误，只能是MarketOrderStyle, LimitOrderStyle类型的实例: {style}")
 
 
 def _check_side(side):
     if not OrderSide.is_valid_side(side):
-        raise InvalidParam("side参数错误，只能是long或short")
+        raise InvalidParam(f"side参数错误，只能是{list(OrderSide.__members__)}中的一种")
 
 
 def _check_status(status):
     if not OrderStatus.is_valid_status(status):
-        raise InvalidParam("status参数错误，只能是%s中的一种" % list(OrderStatus.__members__))
+        raise InvalidParam(f"status参数错误，只能是{list(OrderStatus.__members__)}中的一种")
 
 
 def order(code, amount, style=None, side='long'):
     """ 下单
 
     Args:
-        code: 标的代码字符串
+        code: 标的代码字符串，暂只支持上交所和深交所标的下单
+            上交所示例：600000.XSHG
+            深交所示例：000001.XSHE
         amount: 委托数量，正数代表买入、负数代表卖出
-        style: 下单类型，支持MarketOrderStyle、LimitOrderStyle
+        style: 下单类型，支持MarketOrderStyle（市价单）、LimitOrderStyle（限价单）
         side: 买卖方向，做多：'long'，做空：'short'
 
     Return:
@@ -59,7 +61,7 @@ def order(code, amount, style=None, side='long'):
     else:
         side = "long"
 
-    side = OrderSide.long if side == "long" else OrderSide.short
+    side = OrderSide.get_side(side)
 
     ctx = Context.get_instance()
     order_id = ctx.account.order(code, amount, style, side)
@@ -67,6 +69,11 @@ def order(code, amount, style=None, side='long'):
 
 
 def cancel_order(order_id):
+    """ 撤单
+
+    Args:
+        order_id: 内部委托id字符串（order函数返回值）
+    """
     order_id = str(order_id)
 
     account = Context.get_instance().account
@@ -74,6 +81,20 @@ def cancel_order(order_id):
 
 
 def get_orders(order_id=None, code=None, status=None):
+    """ 查询订单信息
+
+    Args:
+        order_id: 内部委托id，查询指定内部id的委托
+        code: 标的代码字符串，查询指定标的的委托
+        status: 订单状态字符串，查询指定状态的委托
+            status支持：new、open、filling、filled、canceling、partly_canceled、canceled、rejected
+
+    Return:
+        返回一个UserOrder对象组成的列表，每一个UserOrder对象对应一笔委托订单。
+
+    Notice:
+        order_id, code, status可以一起组合使用，相当于查询过滤条件（与条件）
+    """
     if code:
         _check_code(code)
 
@@ -97,8 +118,18 @@ def get_orders(order_id=None, code=None, status=None):
 
 
 def batch_submit_orders(orders):
-    account = Context.get_instance().account
+    """ 批量下单
 
+    Args:
+        orders: 列表类型，列表中每一个元素对应一个字典，存放订单信息
+            每个字典中：
+                必须提供：code、amount
+                可选提供：style、side
+
+    Return:
+        返回一个列表，存放内部订单id字符串（通order函数返回值）
+        如果批量单中某笔订单委托柜台失败，就会返回None
+    """
     order_ids = []
     for _order_info in orders:
         _code = _order_info.get("code")
@@ -108,34 +139,28 @@ def batch_submit_orders(orders):
 
         try:
             if _code is None:
-                raise InvalidParam("批量单缺少标的代码字段code，请检查批量单信息: %s" % _order_info)
-            else:
-                _check_code(_code)
+                raise InvalidParam(f"批量单缺少标的代码字段code，请检查订单信息: {_order_info}")
+
             if _amount is None:
-                raise InvalidParam("批量单缺少标的代码字段amount，请检查批量单信息: %s" % _order_info)
-            else:
-                _check_amount(_amount)
-            if _style:
-                _check_style(_style)
-            if _side:
-                _check_side(_side)
+                raise InvalidParam(f"批量单缺少标的代码字段amount，请检查订单信息: {_order_info}")
 
-            _order_id = account.order(_code, _amount, _style, _style)
-        except InvalidParam as e:
-            sys_logger.error("忽略批量单中的异常订单：%s，异常原因：%s" % (_order_info, e))
+            _order_id = order(_code, _amount, _style, _side)
+        except Exception as e:
+            sys_logger.error(f"批量单下单时发现有异常订单：{_order_info}，异常原因：{e}")
             _order_id = None
-
-        # TODO: 考虑下内部异常是否需要捕获
 
         order_ids.append(_order_id)
     return order_ids
 
 
 def batch_cancel_orders(order_ids):
-    account = Context.get_instance().account
+    """ 批量撤单
 
+    Args:
+        order_ids: 列表，每一个元素是一个内部委托id字符串，用于撤单
+    """
     for _order_id in order_ids:
-        account.cancel_order(_order_id)
+        cancel_order(_order_id)
 
 
 def sync_balance():
@@ -144,6 +169,19 @@ def sync_balance():
 
 def sync_orders():
     Context.get_instance().account.sync_orders()
+
+
+def set_account(**kwargs):
+    """ 设置资金账户交易所需的必要信息
+
+    """
+    pass
+
+
+class _UserObject(object):
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class UserOrder(object):
@@ -161,7 +199,11 @@ class UserOrder(object):
     @property
     def side(self):
         return self.__order.side
-    
+
+    @property
+    def style(self):
+        return self.__order.style
+
     @property
     def price(self):
         return self.__order.price
@@ -169,6 +211,10 @@ class UserOrder(object):
     @property
     def amount(self):
         return self.__order.amount
+
+    @property
+    def filled_amount(self):
+        return self.__order.filled_amount
 
     @property
     def avg_cost(self):
@@ -185,6 +231,32 @@ class UserOrder(object):
     @property
     def commission(self):
         return self.__order.commission
+
+    @property
+    def err_msg(self):
+        return self.__order.err_msg
+
+    @property
+    def canceled_amount(self):
+        return self.__order.canceled_amount
+
+    @property
+    def create_time(self):
+        return self.__order.create_time
+
+    @property
+    def entrust_time(self):
+        return self.__order.entrust_time
+
+    @property
+    def deal_balance(self):
+        return self.__order.deal_balance
+
+    def __str__(self):
+        return f"UserOrder(order_id={self.order_id}, code={self.code}, amount={self.amount}, " \
+               f"style={self.style}), status={self.status}, filled_amount={self.filled_amount}, " \
+               f"avg_cost={self.avg_cost}, deal_balance={self.deal_balance}, " \
+               f"canceled_amount={self.canceled_amount}, create_time={self.create_time}"
 
 
 class UserPosition(object):
@@ -226,13 +298,9 @@ class UserPosition(object):
         return self.__position.position_value
 
     def __str__(self):
-        return "UserPosition(code=%s, amount=%s, locked_amount=%s, available_amount=%s, avg_code=%s, " \
-               "side=%s, last_price=%s, position_value=%s)" % (self.code, self.amount, self.locked_amount,
-                                                               self.available_amount, self.avg_cost, self.side,
-                                                               self.last_price, self.position_value)
-
-    def __repr__(self):
-        return self.__str__()
+        return f"UserPosition(code={self.code}, amount={self.amount}, locked_amount={self.locked_amount}, " \
+               f"available_amount={self.available_amount}, avg_cost={self.avg_cost}, side={self.side}, " \
+               f"last_price={self.last_price}, position_value={self.position_value})"
 
 
 __all__ = [

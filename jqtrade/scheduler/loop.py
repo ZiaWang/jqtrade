@@ -4,10 +4,11 @@ import pyuv
 import signal
 import traceback
 
-from .log import sys_logger
+from ..common.log import sys_logger
+from ..common.utils import milliseconds_to_dt
+
 from .queue import ThreadSafeQueue, QueueEmptyError
 from .message import Message
-from .utils import milliseconds_to_dt
 
 
 logger = sys_logger.getChild("loop")

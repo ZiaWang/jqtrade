@@ -2,11 +2,12 @@
 import re
 import datetime
 
+from ..common.exceptions import InvalidParam
+from ..common.log import sys_logger
+from ..common.utils import dt_to_milliseconds
+
 from .message import Message
-from .utils import dt_to_milliseconds
 from .context import Context
-from .exceptions import InvalidParam
-from .log import sys_logger
 from .config import get_config
 
 
