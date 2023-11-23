@@ -120,6 +120,10 @@ class AbsTradeGate(object):
         raise NotImplementedError
 
 
+class AnXinDMAError(Exception):
+    pass
+
+
 class AnXinDMATradeGate(AbsTradeGate):
     """ 安信one quant专用交易接口
 
@@ -148,15 +152,17 @@ class AnXinDMATradeGate(AbsTradeGate):
                     "max_attempts": 3,          # 默认最大重试3次
                     "attempt_internal": 0.15       # 默认每次重试间隔0.15秒
                 }
+        "ignore_error_line": 解析订单状态文件时，是否忽略掉解析失败的订单信息
     """
     DEFAULT_ACCOUNT_TYPE = "STOCK"
     DEFAULT_COUNTER_TYPE = "UM0"
     DEFAULT_ALGO_TYPE = "DMA"
-    DEFAULT_ORDER_DIR = r"C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法"
+    DEFAULT_ORDER_DIR = r"C:\Ax\安信OneQuant\csvTemplate\DMA算法"
     DEFAULT_SYNC_RETRY_KWARGS = {
         "max_attempts": 3,
         "attempt_internal": 0.15
     }
+    DEFAULT_IGNORE_ERROR_LINE = True
 
     TRADE_SIDES = {
         "B": 1,
@@ -230,6 +236,8 @@ class AnXinDMATradeGate(AbsTradeGate):
         self._wait_lock_internal = None
         self._wait_lock_time_out = None
 
+        self._ignore_error_line = None
+
     def order(self, sys_order):
         acct_no = self._options.get("account_no")
         if not acct_no:
@@ -279,6 +287,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         logger.info(f"订单已提交到文件单，订单id：{sys_order.order_id}")
 
         self._orders[sys_order.order_id] = sys_order.json()
+        self._save_orders()
 
     def cancel_order(self, order_id):
         now = datetime.datetime.now()
@@ -315,6 +324,8 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         acct_no = str(acct_no)
         asset_infos = self._read_csv(self._assert_info_csv, dtype={"acct": str, "exchange": str})
+        if len(asset_infos) == 0:
+            raise AnXinDMAError("文件单中未查询到资产数据")
         for _asset_info in asset_infos.itertuples():
             if _asset_info.acct != acct_no:
                 continue
@@ -364,8 +375,6 @@ class AnXinDMATradeGate(AbsTradeGate):
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         df = pd.read_csv(*args[1:], **kwargs)
-        if len(df) <= 1:
-            raise OSError(f"检测到文件不完整：{path}")
         if not df.loc[len(df)-1].isna().all():
             raise OSError(f"检测到文件不完整：{path}")
         return df
@@ -398,34 +407,43 @@ class AnXinDMATradeGate(AbsTradeGate):
         with open(self._order_result_csv, "r") as rf:
             rf.seek(pre_order_result_offset)
             while True:
-                _line = rf.readline().strip()
-                if not _line:
-                    break
+                try:
+                    _line = rf.readline().strip()
+                    if not _line:
+                        break
 
-                if _line.startswith(self.ORDER_RESULT_COLS[0]):
+                    if _line.startswith(self.ORDER_RESULT_COLS[0]):
+                        self._order_result_offset = rf.tell()
+                        continue
+
+                    _items = [_s.strip() for _s in _line.split(",")]
+                    if len(_items) != len(self.ORDER_RESULT_COLS):
+                        break
+
+                    _order_result_line = self.ORDER_RESULT_CLS(*_items)
+                    if _order_result_line.resultType == self.RESULT_TYPE_CANCEL \
+                            and _order_result_line.status == self.RESULT_REJECT_STATUS:
+                        if self._has_synced:
+                            logger.info(f"撤单失败，被撤单id：{_order_result_line.custBatchNo}，"
+                                        f"失败原因：{_order_result_line.errorMsg}")
+                        self._order_result_offset = rf.tell()
+                        continue
+
+                    if _order_result_line.resultType == self.RESULT_TYPE_ORDER \
+                            and _order_result_line.status == self.RESULT_REJECT_STATUS:
+                        _order = self._orders.get(_order_result_line.custBatchNo)
+                        if _order:
+                            _order["status"] = OrderStatus.rejected.value
+                            _order["err_msg"] = _order_result_line.errorMsg
                     self._order_result_offset = rf.tell()
-                    continue
-
-                _items = [_s.strip() for _s in _line.split(",")]
-                if len(_items) != len(self.ORDER_RESULT_COLS):
-                    break
-
-                _order_result_line = self.ORDER_RESULT_CLS(*_items)
-                if _order_result_line.resultType == self.RESULT_TYPE_CANCEL \
-                        and _order_result_line.status == self.RESULT_REJECT_STATUS:
-                    if self._has_synced:
-                        logger.info(f"撤单失败，被撤单id：{_order_result_line.custBatchNo}，"
-                                    f"失败原因：{_order_result_line.errorMsg}")
-                    self._order_result_offset = rf.tell()
-                    continue
-
-                if _order_result_line.resultType == self.RESULT_TYPE_ORDER \
-                        and _order_result_line.status == self.RESULT_REJECT_STATUS:
-                    _order = self._orders.get(_order_result_line.custBatchNo)
-                    if _order:
-                        _order["status"] = OrderStatus.rejected.value
-                        _order["err_msg"] = _order_result_line.errorMsg
-                self._order_result_offset = rf.tell()
+                except EOFError:
+                    pass
+                except Exception as e:
+                    logger.exception(f"{self._order_result_csv}中有一笔订单状态信息同步失败，error={e}")
+                    if self._ignore_error_line:
+                        self._order_result_offset = rf.tell()
+                    else:
+                        raise
 
         with open(self._order_update_csv, "r", encoding=self._file_coding) as rf:
             rf.seek(pre_order_update_offset)
@@ -454,6 +472,12 @@ class AnXinDMATradeGate(AbsTradeGate):
                     self._order_update_offset = rf.tell()
                 except EOFError:
                     break
+                except Exception as e:
+                    logger.exception(f"{self._order_update_csv}中有一笔订单状态信息同步失败, error={e}")
+                    if self._ignore_error_line:
+                        self._order_update_offset = rf.tell()
+                    else:
+                        raise
 
         self._has_synced = True
         self._save_orders()
@@ -509,7 +533,8 @@ class AnXinDMATradeGate(AbsTradeGate):
         self._data_dir = os.path.join(runtime_dir, "data")
         self._data_file = os.path.join(self._data_dir, f"{ctx.task_name}_{self._date.strftime('%Y%m%d')}.json")
 
-        self._file_coding = self._options.get("coding", sys.getfilesystemencoding())
+        self._file_coding = self._options.get("file_encoding", sys.getfilesystemencoding())
+        self._ignore_error_line = self._options.get("ignore_error_line", self.DEFAULT_IGNORE_ERROR_LINE)
 
         _sync_retry_kwargs = options.get("sync_retry_kwargs", self.DEFAULT_SYNC_RETRY_KWARGS)
         AnXinDMATradeGate._read_csv = simple_retry(**_sync_retry_kwargs)(AnXinDMATradeGate._read_csv)
