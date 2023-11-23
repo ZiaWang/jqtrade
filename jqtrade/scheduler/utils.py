@@ -26,8 +26,8 @@ def get_activate_task_process():
         parent_pid = []
         for _p in psutil.process_iter():
             try:
-                _cmd_lines = _p.cmdline()
-                if "jqtrade" in _cmd_lines and "start_task" in _cmd_lines:
+                _cmd_line = " ".join(_p.cmdline())
+                if "jqtrade" in _cmd_line and "start_task" in _cmd_line:
                     task_process.append(_p)
                     parent_pid.append(_p.ppid())
             except psutil.AccessDenied:

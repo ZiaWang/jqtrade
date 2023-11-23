@@ -191,12 +191,23 @@ class Account(AbsAccount):
         try:
             account_info = self._ctx.trade_gate.sync_balance()
 
-            cash_info = account_info.get("cash", {})
+            if "cash" not in account_info:
+                raise ValueError("trade_gate.sync_balance未返回资金数据")
+
+            if "positions" not in account_info:
+                raise ValueError("trade_gate.sync_balance未返回持仓数据")
+
+            cash_info = account_info["cash"]
             self._total_assert = cash_info.get("total_asset") or self._total_assert
             self._available_cash = cash_info.get("available_cash") or self._available_cash
             self._locked_cash = cash_info.get("locked_cash") or self._locked_cash
 
-            positions = account_info.get("positions", [])
+            # 每次全量同步持仓前，清空缓存中的持仓，然后使用交易接口同步到的持仓更新内存。由于框架是单线程，所以这样处理没问题。
+            # 这样的处理逻辑依赖交易接口返回正常的持仓，相较于原地更新，逻辑简单，不容易出问题。
+            self._long_positions.clear()
+            self._short_positions.clear()
+
+            positions = account_info["positions"]
             for _pos_info in positions:
                 _side = OrderSide.get_side(_pos_info.pop("side"))
                 _pos = Position(

@@ -5,6 +5,8 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("-V", "--version", action="store_true", help="获取版本信息")
+
     sub_parsers = parser.add_subparsers()
 
     # 启动实盘任务
@@ -33,7 +35,12 @@ def main():
     stop_task_parser.set_defaults(func=stop_task)
 
     options = parser.parse_args()
-    options.func(options)
+
+    if options.version:
+        import jqtrade
+        print(jqtrade.__version__)
+    else:
+        options.func(options)
 
 
 def start_task(options):

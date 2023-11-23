@@ -339,6 +339,10 @@ class AnXinDMATradeGate(AbsTradeGate):
             if pd.isna(_pos.symbol):
                 break
 
+            # 过滤掉当前持仓量为0的持仓
+            if int(_pos.currentQty) == 0:
+                continue
+
             data["positions"].append({
                 "code": self._decode_security(str(_pos.symbol)),
                 "amount": int(_pos.currentQty),
