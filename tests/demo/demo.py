@@ -1,8 +1,13 @@
 # -#- coding: utf-8 -*-
+import datetime
 
 
 def process_initialize(context):
     log.info("process_initialize run")
+
+    # set_options(
+    #     use_account=False,
+    # )
 
     run_daily(func_093000, "09:30:00")
     run_daily(before_market_open, "open-30m")

@@ -134,6 +134,11 @@ class EventLoop(object):
         self.push_message(Message(time=self.get_current_time() + int(delay), callback=lambda: callback(*args, **kws)))
 
     def register_signal_callback(self, signum, callback):
+        # import os
+        # if os.name == "nt":
+        #     import signal
+        #     signal.signal(signal.SIGTERM, self.handle_signal)
+        # else:
         signal_handler = self._signal_handlers.get(signum, None)
         if signal_handler is None:
             signal_handler = self._signal_handlers[signum] = pyuv.Signal(self._uvloop)

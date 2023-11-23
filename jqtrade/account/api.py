@@ -171,13 +171,6 @@ def sync_orders():
     Context.get_instance().account.sync_orders()
 
 
-def set_account(**kwargs):
-    """ 设置资金账户交易所需的必要信息
-
-    """
-    pass
-
-
 class _UserObject(object):
 
     def __repr__(self):

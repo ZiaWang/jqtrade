@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from ..common.exceptions import InternalError
+from ..common.exceptions import InternalError, InvalidCall
 
 
 class Context(object):
@@ -12,13 +12,14 @@ class Context(object):
 
     _instance = None
 
-    def __init__(self, task_name, event_bus, loop, scheduler, loader, debug, start=None, end=None):
+    def __init__(self, task_name, event_bus, loop, scheduler, loader, debug, config, start=None, end=None):
         self._task_name = task_name
         self._event_bus = event_bus
         self._event_loop = loop
         self._scheduler = scheduler
         self._loader = loader
         self._debug = debug
+        self._config = config
 
         self._start = start or datetime.datetime.now()
         self._end = end
@@ -27,6 +28,8 @@ class Context(object):
         self._trade_gate = None
         self._portfolio = None
         self._strategy = None
+
+        self._use_account = None
 
         self.__class__._instance = self
 
@@ -80,6 +83,9 @@ class Context(object):
 
     @property
     def account(self):
+        if not self._use_account:
+            raise InvalidCall("检测到use_account=False，程序未加载账户组件，无法调用账户模块相关API，"
+                              "请在set_options中设置use_account=True后再试")
         return self._account
 
     @account.setter
@@ -88,6 +94,10 @@ class Context(object):
 
     @property
     def trade_gate(self):
+        if not self._use_account:
+            raise InvalidCall("检测到use_account=False，程序未加载账户组件，无法调用账户模块相关API，"
+                              "请在set_options中设置use_account=True后再试")
+
         return self._trade_gate
 
     @trade_gate.setter
@@ -96,6 +106,10 @@ class Context(object):
 
     @property
     def portfolio(self):
+        if not self._use_account:
+            raise InvalidCall("检测到use_account=False，程序未加载账户组件，无法调用账户模块相关API，"
+                              "请在set_options中设置use_account=True后再试")
+
         return self._portfolio
 
     @portfolio.setter
@@ -113,3 +127,15 @@ class Context(object):
     @strategy.setter
     def strategy(self, s):
         self._strategy = s
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def use_account(self):
+        return self._use_account
+
+    @use_account.setter
+    def use_account(self, val):
+        self._use_account = val

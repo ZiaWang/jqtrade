@@ -32,8 +32,8 @@ def process_initialize(context):
 g = {
     # "code": "601988.XSHG",
     "code": "511880.XSHG",
-    "price": 101.740,
-    "amount": 100,
+    "price": 101.753,
+    "amount": -100,
 }
 
 

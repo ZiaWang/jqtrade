@@ -2,9 +2,7 @@
 import os
 import sys
 
-from importlib import import_module
-
-from ..common.exceptions import TaskError, ConfigError
+from ..common.exceptions import TaskError
 from ..common.log import sys_logger, setup_file_logger, setup_logger
 
 from .loader import Loader
@@ -86,34 +84,8 @@ class TaskRunner(object):
                           loop=event_loop,
                           scheduler=EventSourceScheduler(),
                           loader=Loader(self._code_file),
-                          debug=self._debug)
-
-        scheduler_config = get_scheduler_config()
-        if scheduler_config.SETUP_ACCOUNT:
-            logger.info("初始化account模块")
-            from ..account.account import Account
-            from ..account.portfolio import Portfolio
-            from ..account.config import setup_account_config, get_config as get_account_config
-            if self._config:
-                logger.info(f"account模块加载用户自定义配置：{self._config}")
-                setup_account_config(self._config)
-            account_config = get_account_config()
-            if not account_config.TRADE_GATE:
-                raise ConfigError("未配置trade gate")
-
-            try:
-                module_name, gate_name = account_config.TRADE_GATE.rsplit(".", 1)
-                module = import_module(module_name)
-                trade_gate = getattr(module, gate_name)()
-            except Exception as e:
-                logger.error(f"初始化trade gate失败，error={e}")
-                raise
-
-            context.trade_gate = trade_gate
-            account = Account(context)
-            context.account = account
-            portfolio = Portfolio(account)
-            context.portfolio = portfolio
+                          debug=self._debug,
+                          config=self._config)
 
         strategy = Strategy(context)
         strategy.setup()

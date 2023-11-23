@@ -2,7 +2,9 @@
 import os
 import datetime
 
-from ..common.exceptions import InvalidCall, InvalidParam, TaskError
+from importlib import import_module
+
+from ..common.exceptions import InvalidCall, InvalidParam, TaskError, ConfigError
 from ..common.log import user_logger, sys_logger
 from ..common.utils import parse_time
 
@@ -160,11 +162,6 @@ class Strategy(object):
         if not self._is_scheduler_allowed:
             raise InvalidCall("set_options只能在process_initialize中调用")
 
-        required_fields = ("account_no", )
-        for _f in required_fields:
-            if _f not in kwargs:
-                raise InvalidParam("set_options必须通过'account_no'选项设置资金账号")
-
         # parse scheduler options
         if "use_account" in kwargs:
             kwargs["use_account"] = bool(kwargs["use_account"])
@@ -203,15 +200,49 @@ class Strategy(object):
         self._options = kwargs
 
         # set_options 后需要立即执行的初始化工作，避免用户查询到未同步的account信息
-        runtime_dir = kwargs.get("runtime_dir", config.RUNTIME_DIR)
+        runtime_dir = os.path.abspath(os.path.expanduser(kwargs.get("runtime_dir", config.RUNTIME_DIR)))
         if not os.path.isdir(runtime_dir):
             os.makedirs(runtime_dir)
         logger.info(f"程序运行时目录：{runtime_dir}")
 
-        use_account = kwargs.get("use_account", config.SETUP_ACCOUNT)
+        self._ctx.use_account = use_account = kwargs.get("use_account", config.SETUP_ACCOUNT)
         if use_account:
-            logger.info("加载account模块")
-            self._ctx.account.setup(kwargs)
+            self.setup_account(kwargs)
+        else:
+            logger.warn("检测到use_account设置为False，策略进程将不再加载账户模块组件，调用账户相关API可能会报错")
+
+    def setup_account(self, options):
+        logger.info("加载account模块")
+
+        if "account_no" not in options:
+            raise InvalidParam("set_options必须通过'account_no'选项设置资金账号")
+
+        from ..account.account import Account
+        from ..account.portfolio import Portfolio
+        from ..account.config import setup_account_config, get_config as get_account_config
+        if self._ctx.config:
+            logger.info(f"account模块加载用户自定义配置：{self._ctx.config}")
+            setup_account_config(self._ctx.config)
+        account_config = get_account_config()
+        if not account_config.TRADE_GATE:
+            raise ConfigError("未配置trade gate")
+
+        try:
+            module_name, gate_name = account_config.TRADE_GATE.rsplit(".", 1)
+            module = import_module(module_name)
+            trade_gate = getattr(module, gate_name)()
+        except Exception as e:
+            logger.error(f"初始化trade gate失败，error={e}")
+            raise
+
+        self._ctx.trade_gate = trade_gate
+        account = Account(self._ctx)
+
+        self._ctx.account = account
+        portfolio = Portfolio(account)
+        self._ctx.portfolio = portfolio
+
+        self._ctx.account.setup(options)
 
     @property
     def options(self):
