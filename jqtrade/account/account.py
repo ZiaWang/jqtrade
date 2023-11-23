@@ -118,7 +118,7 @@ class Account(AbsAccount):
 
     @property
     def need_sync_order(self):
-        return bool(self._options.get("sync_order", config.SYNC_BALANCE))
+        return bool(self._options.get("sync_order", config.SYNC_ORDER))
 
     def _setup_sync_timer(self):
         logger.info("setup account sync timer")
@@ -129,7 +129,7 @@ class Account(AbsAccount):
         event_source = EventSource(start=self._ctx.start, end=self._ctx.end)
         now = datetime.datetime.now().replace(microsecond=0)
 
-        sync_internal = bool(self._options.get("sync_internal", config.SYNC_INTERNAL))
+        sync_internal = float(self._options.get("sync_internal", config.SYNC_INTERNAL))
         sync_period = self._options.get("sync_period", config.SYNC_PERIOD)
         if not sync_period:
             current = now + datetime.timedelta(seconds=sync_internal)
@@ -146,7 +146,7 @@ class Account(AbsAccount):
                 _start_dt = datetime.datetime.combine(now.date(), _start)
                 _end_dt = datetime.datetime.combine(now.date(), _end)
                 current = _start_dt
-                while current <= now.replace(hour=23, minute=59, second=59):
+                while current <= _end_dt:
                     event_source.daily(event_cls, current.strftime("%H:%M:%S"))
                     current += datetime.timedelta(seconds=sync_internal)
 

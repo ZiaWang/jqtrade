@@ -184,7 +184,7 @@ class Strategy(object):
             kwargs["sync_order"] = bool(kwargs["sync_order"])
 
         if "sync_internal" in kwargs:
-            kwargs["sync_internal"] = bool(kwargs["sync_internal"])
+            kwargs["sync_internal"] = float(kwargs["sync_internal"])
 
         sync_period = kwargs.get("sync_period")
         if sync_period:

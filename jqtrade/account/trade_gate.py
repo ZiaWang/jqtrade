@@ -306,7 +306,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                         line = header + os.linesep + line
                     fp.write(line)
                     break
-                except BlockingIOError:
+                except (BlockingIOError, portalocker.exceptions.AlreadyLocked):
                     if time.time() - start >= self._wait_lock_time_out:
                         raise TimeOut("waiting file lock time out")
                     time.sleep(self._wait_lock_internal)

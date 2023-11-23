@@ -9,6 +9,12 @@ def process_initialize(context):
         account_no="880300017401",
         order_dir="C:\Ax\安信OneQuant\csvTemplate\DMA算法",
         file_encoding="GBK",
+        sync_period=[
+                    # (datetime.time(11), datetime.time(11, 30)),
+                    ("11:20:00", "11:40:00"),
+                    # (datetime.time(13, 0), datetime.time(15, 0)),
+                ],
+        sync_internal=10,
     )
 
     log.info("total_assert： %s" % context.portfolio.total_assert)
@@ -26,7 +32,7 @@ def process_initialize(context):
     run_daily(check_sync_balance, (datetime.datetime.now() + datetime.timedelta(seconds=25)).strftime("%H:%M:%S"))
     run_daily(check_sync_orders, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
 
-    run_daily(report_order_status, "every_minute")
+    # run_daily(report_order_status, "every_minute")
 
 
 g = {
