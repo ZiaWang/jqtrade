@@ -28,9 +28,8 @@ def main():
     stop_task_parser.add_argument("-n", "--name", default=None, help="通过指定实盘名称来停止实盘")
     stop_task_parser.add_argument("-p", "--pid", type=int, default=None, help="通过指定实盘进程pid来停止实盘")
     stop_task_parser.add_argument("--all", action="store_true", help="停止所有运行中的实盘任务")
-    stop_task_parser.add_argument("-s", "--signal", default="SIGTERM",
-                                  choices=["SIGTERM", "SIGKILL"], help="指定停止进程的信号，默认SIGTERM，"
-                                                                       "希望强制退出时请使用SIGKILL")
+    stop_task_parser.add_argument("-f", "--force", action="store_true", help="是否强制杀掉策略进程，"
+                                                                             "不指定时，会等待策略进程处理完当前事务再退出")
     stop_task_parser.set_defaults(func=stop_task)
 
     options = parser.parse_args()
@@ -78,7 +77,6 @@ def stop_task(options):
     python -m quant_engine stop_task -p 12345
     python -m quant_engine stop_task --all
     """
-    import signal
     from .scheduler.utils import get_activate_task_process, parse_task_info
 
     active_tasks = get_activate_task_process()
@@ -86,33 +84,36 @@ def stop_task(options):
     if not options.name and not options.pid and not options.all:
         raise ValueError("--name/--pid/--all至少指定一项")
 
-    sig = {"SIGTERM": signal.SIGTERM, "SIGKILL": signal.SIGKILL}.get(options.signal)
+    killed_pid = []
 
-    sent_pid = []
-
-    def _stop(_p):
-        _p.send_signal(sig)
-        sent_pid.append(_p.pid)
-        print(f"尝试停止进程 {_p.pid}，已向该进程发送停止信号 {sig}")
+    def _kill(_p, force=False):
+        if force:
+            _p.kill()
+            print(f"强制停止进程 {_p.pid}")
+        else:
+            import signal
+            _p.send_signal(signal.SIGTERM)
+            print(f"尝试停止进程 {_p.pid}，已向该进程发送SIGTERM停止信号")
+        killed_pid.append(_p.pid)
 
     if options.all:
         for _p in active_tasks:
-            _stop(_p)
+            _kill(_p, options.force)
     elif options.pid:
         for _p in active_tasks:
             if _p.pid == options.pid:
-                _stop(_p)
+                _kill(_p, options.force)
                 break
     else:
         for _p in active_tasks:
             _task_info = parse_task_info(_p.cmdline())
             if options.name == _task_info["name"]:
-                _stop(_p)
+                _kill(_p, options.force)
 
-    if sent_pid and sig != signal.SIGKILL:
-        print("若您执行完stop_task命令后发现策略进程仍在运行，请尝试使用 -s SIGKILL 选项停止进程")
-    else:
+    if not killed_pid:
         print("未找到需要停止的进程")
+    elif killed_pid and not options.force:
+        print("若您执行完stop_task命令后发现策略进程仍在运行，请尝试使用 -f 或 --force 选项强制停止进程")
 
 
 if __name__ == '__main__':

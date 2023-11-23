@@ -417,7 +417,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                         continue
 
                     _items = [_s.strip() for _s in _line.split(",")]
-                    if len(_items) != len(self.ORDER_RESULT_COLS):
+                    if len(_items) < len(self.ORDER_RESULT_COLS):
                         break
 
                     _order_result_line = self.ORDER_RESULT_CLS(*_items)
@@ -458,7 +458,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                         continue
 
                     _items = [_s.strip() for _s in _line.split(",")]
-                    if len(_items) != len(self.ORDER_LINE_COLS):
+                    if len(_items) < len(self.ORDER_LINE_COLS):
                         break
 
                     order_line = self.ORDER_LINE_CLS(*_items)

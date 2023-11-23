@@ -190,7 +190,7 @@ jqtrade start_task -c strategies/demo.py -n demo -o demo.log -e 'PYTHONPATH=/hom
 
 ### stop_task
 ```bash
-stop_task [-h] [-n NAME] [-p PID] [--all] [-s {SIGTERM,SIGKILL}]
+stop_task [-h] [-n NAME] [-p PID] [--all] [-f]
 ```
 stop_task用于停止运行中的策略进程，该子命令选项如下：
 * 以下三个选项至少提供一个:
@@ -198,13 +198,13 @@ stop_task用于停止运行中的策略进程，该子命令选项如下：
     * -p PID, --pid PID: 通过指定实盘进程pid来停止实盘, 策略进程的pid可以通过 `get_tasks` 命令查询到，或直接通过系统查询
     * --all: 停止所有运行中的实盘任务, 当指定此选项的时候，会忽略`-n`和`-p`选项
 * 可选项:
-    * -s {SIGTERM,SIGKILL}, --signal {SIGTERM,SIGKILL}: 停止策略进程时使用的信号，默认SIGTERM，希望强制退出时请使用SIGKILL。
+    *  -f, --force           是否强制杀掉策略进程，不指定时，会等待策略进程处理完当前事务再退
 
 **注意**:
 * 如果你的策略进程没有后台运行，而是在当前终端对话框中正在运行的，可以直接使用`ctrl + c` 来快速停止策略。jqtrade内部会监听`ctrl + c`发送的信号，然后安全的停止当前策略进程
 * 关于停止策略进程的时间:
-    * 使用stop_task默认`SIGTERM`选项或`ctrl + c`来停止策略进程时，策略进程会在处理完当前的事务之后，再执行信号处理。
-    * 使用`stop_task -s SIGKILL`时，策略进程会被系统直接杀掉，不管当前是否正在处理事务
+    * 不指定`-f`或`--force`时，策略进程会在处理完当前的事务之后，再执行信号处理。
+    * 指定`-f`或`--force`时，策略进程会被系统直接杀掉，不管当前是否正在处理事务
 
 ### get_tasks
 ```bash
