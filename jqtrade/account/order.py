@@ -123,6 +123,9 @@ class OrderStyle(object):
         else:
             return LimitOrderStyle(price)
 
+    def __str__(self):
+        return f"{self.__class__.__name__}(price={self._price})"
+
 
 class MarketOrderStyle(OrderStyle):
     def __init__(self, price=0):

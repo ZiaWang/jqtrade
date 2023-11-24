@@ -223,7 +223,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         self._order_update_offset = 0
         self._order_result_offset = 0
 
-        self._hash_synced = False
+        self._has_synced = False
 
         self._file_coding = None
 
@@ -232,7 +232,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         if not acct_no:
             raise InvalidParam("未设置account_no信息，请使用set_account设置资金账号")
 
-        account_type = self._options.get("account_type", "stock")
+        account_type = self._options.get("account_type", self.DEFAULT_ACCOUNT_TYPE)
         if account_type != self.DEFAULT_ACCOUNT_TYPE:
             raise InvalidParam(f"当前版本仅支持{self.DEFAULT_ACCOUNT_TYPE}类型账户交易")
 
@@ -255,7 +255,7 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         order_info.append(abs(sys_order.amount))
 
-        algo_type = self._options.get("algo_type", self.DEFAULT_COUNTER_TYPE)
+        algo_type = self._options.get("algo_type", self.DEFAULT_ALGO_TYPE)
         if algo_type != self.DEFAULT_ALGO_TYPE:
             logger.warn(f"检测到当前使用的算法交易类型是{algo_type}, 请与您的客户经理确认是否开通了此算法交易类型，否则将影响交易")
         order_info.append(algo_type)
@@ -355,12 +355,12 @@ class AnXinDMATradeGate(AbsTradeGate):
         if not os.path.exists(path):
             raise FileNotFoundError(f"找不到文件单：{path}，请检查one quant是否启动或文件单是否开启定时导出模式")
 
-    @staticmethod
-    def _read_csv(*args, **kwargs):
-        path = args[0]
+    @classmethod
+    def _read_csv(cls, *args, **kwargs):
+        path = args[1]
         if not os.path.exists(path):
             raise FileNotFoundError(path)
-        df = pd.read_csv(*args, **kwargs)
+        df = pd.read_csv(*args[1:], **kwargs)
         if len(df) <= 1:
             raise OSError(f"检测到文件不完整：{path}")
         if not df.loc[len(df)-1].isna().all():
@@ -410,7 +410,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                 _order_result_line = self.ORDER_RESULT_CLS(*_items)
                 if _order_result_line.resultType == self.RESULT_TYPE_CANCEL \
                         and _order_result_line.status == self.RESULT_REJECT_STATUS:
-                    if not self._hash_synced:
+                    if self._has_synced:
                         logger.info(f"撤单失败，被撤单id：{_order_result_line.custBatchNo}，"
                                     f"失败原因：{_order_result_line.errorMsg}")
                     self._order_result_offset = rf.tell()
@@ -452,6 +452,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                 except EOFError:
                     break
 
+        self._has_synced = True
         self._save_orders()
 
         data = []

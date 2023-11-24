@@ -31,6 +31,7 @@ def check_sync_balance(context):
     log.info("available_cash： %s" % context.portfolio.available_cash)
     log.info("long_positions length:  %s" % len(context.portfolio.long_positions))
     log.info("short_positions length： %s" % len(context.portfolio.short_positions))
+    log.info("000001.XSHE pos: %s" % context.portfolio.long_positions["000001.XSHE"])
 
 
 def check_sync_orders(context):

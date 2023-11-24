@@ -59,8 +59,6 @@ class Strategy(object):
 
         self._schedule_count = 0
 
-        self._account_options = {}
-
         self._options = {}
 
     def setup(self):
@@ -76,16 +74,6 @@ class Strategy(object):
         else:
             raise TaskError("策略代码中未定义process_initialize函数")
 
-        runtime_dir = self._options.get("runtime_dir", config.RUNTIME_DIR)
-        if not os.path.isdir(runtime_dir):
-            os.makedirs(runtime_dir)
-        logger.info(f"程序运行时目录：{runtime_dir}")
-
-        use_account = self._options.get("use_account", config.SETUP_ACCOUNT)
-        if use_account:
-            logger.info("加载account模块")
-            self._ctx.account.setup(self._account_options)
-
         self.schedule()
 
     def make_apis(self):
@@ -94,7 +82,7 @@ class Strategy(object):
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
         self._user_module.set_options = self.set_options
-        self._user_module.set_account = self.set_account
+        # self._user_module.set_account = self.set_account
 
         # account模块相关API
         if config.SETUP_ACCOUNT:
@@ -171,45 +159,16 @@ class Strategy(object):
     def user_module(self):
         return self._user_module
 
-    def set_account(self, **kwargs):
-        if not self._is_scheduler_allowed:
-            raise InvalidCall("set_account只能在process_initialize中调用")
-
-        if not config.SETUP_ACCOUNT:
-            logger.warn("由于策略设置SETUP_ACCOUNT=False，因此set_account调用将被忽略")
-            return
-
-        required_fields = ("account_no", )
-        for _f in required_fields:
-            if _f not in kwargs:
-                raise InvalidParam("set_account必须提供资金账户的id")
-
-        if "sync_balance" in kwargs:
-            kwargs["sync_balance"] = bool(kwargs["sync_balance"])
-
-        if "sync_order" in kwargs:
-            kwargs["sync_order"] = bool(kwargs["sync_order"])
-
-        if "sync_internal" in kwargs:
-            kwargs["sync_internal"] = bool(kwargs["sync_internal"])
-
-        sync_period = kwargs.get("sync_period")
-        if sync_period:
-            periods = []
-            for _period in sync_period:
-                if len(_period) != 2:
-                    raise ValueError(f"sync_period设置错误：{_period}")
-                _start, _end = _period
-                periods.append((parse_time(_start), parse_time(_end)))
-            kwargs["sync_period"] = periods
-
-        self._account_options = kwargs
-
     def set_options(self, **kwargs):
         if not self._is_scheduler_allowed:
             raise InvalidCall("set_options只能在process_initialize中调用")
 
-        # parse some options
+        required_fields = ("account_no", )
+        for _f in required_fields:
+            if _f not in kwargs:
+                raise InvalidParam("set_options必须通过'account_no'选项设置资金账号")
+
+        # parse core options
         if "use_account" in kwargs:
             kwargs["use_account"] = bool(kwargs["use_account"])
 
@@ -229,7 +188,39 @@ class Strategy(object):
         if "market_close_time" in kwargs:
             kwargs["market_close_time"] = parse_time(kwargs["market_close_time"])
 
+        # parse account options
+        if "sync_balance" in kwargs:
+            kwargs["sync_balance"] = bool(kwargs["sync_balance"])
+
+        if "sync_order" in kwargs:
+            kwargs["sync_order"] = bool(kwargs["sync_order"])
+
+        if "sync_internal" in kwargs:
+            kwargs["sync_internal"] = bool(kwargs["sync_internal"])
+
+        sync_period = kwargs.get("sync_period")
+        if sync_period:
+            periods = []
+            for _period in sync_period:
+                if len(_period) != 2:
+                    raise ValueError(f"sync_period设置错误：{_period}")
+                _start, _end = _period
+                periods.append((parse_time(_start), parse_time(_end)))
+            kwargs["sync_period"] = periods
+
+        # set options
         self._options = kwargs
+
+        # 做一些 set_options 后需要立即执行的初始化工作
+        runtime_dir = kwargs.get("runtime_dir", config.RUNTIME_DIR)
+        if not os.path.isdir(runtime_dir):
+            os.makedirs(runtime_dir)
+        logger.info(f"程序运行时目录：{runtime_dir}")
+
+        use_account = kwargs.get("use_account", config.SETUP_ACCOUNT)
+        if use_account:
+            logger.info("加载account模块")
+            self._ctx.account.setup(kwargs)
 
     @property
     def options(self):

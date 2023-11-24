@@ -219,9 +219,9 @@ class Account(AbsAccount):
                 _remote_order = Order.load(**_order_info)
                 if _local_order is None:
                     if self.has_synced:
-                        logger.error(f"从trade_gate加载到本地不存在的订单: {_order_info}")
+                        logger.info(f"从trade_gate同步到本地不存在的订单: {_order_info}")
                     else:
-                        logger.error(f"从trade_gate加载订单: {_order_info}")
+                        logger.info(f"从trade_gate同步订单: {_order_info}")
                     self._orders[_order_id] = _remote_order
                     continue
 
@@ -264,7 +264,7 @@ class Account(AbsAccount):
         if local_order.status != OrderStatus.new:
             return
         logger.info(f"订单已报，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
-                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}")
+                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}，action：{remote_order.action}")
 
     @staticmethod
     def _notify_deal(local_order, remote_order):
