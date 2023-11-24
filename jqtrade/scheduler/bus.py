@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from collections import OrderedDict
 
 from ..common.log import sys_logger

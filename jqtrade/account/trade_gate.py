@@ -215,11 +215,8 @@ class AnXinDMATradeGate(AbsTradeGate):
         self._position_info_csv = self._date.strftime("positionInfo_%Y%m%d.csv")
 
         # 持久化存储策略与订单映射关系，用于重启加载恢复订单
-        ctx = Context.get_instance()
-
-        runtime_dir = self._options.get("runtime_dir", scheduler_config.RUNTIME_DIR)
-        self._data_dir = os.path.join(runtime_dir, "data")
-        self._data_file = os.path.join(self._data_dir, f"{ctx.task_name}_{self._date.strftime('%Y%m%d')}.json")
+        self._data_dir = None
+        self._data_file = None
 
         # 缓存当日订单. key: order_id, value: dict
         self._orders = {}
@@ -228,7 +225,7 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         self._hash_synced = False
 
-        self._file_coding = self._options.get("coding", sys.getfilesystemencoding())
+        self._file_coding = None
 
     def order(self, sys_order):
         acct_no = self._options.get("account_no")
@@ -359,8 +356,6 @@ class AnXinDMATradeGate(AbsTradeGate):
             raise FileNotFoundError(f"找不到文件单：{path}，请检查one quant是否启动或文件单是否开启定时导出模式")
 
     @staticmethod
-    @simple_retry(on_exception=lambda e: isinstance(e, (FileNotFoundError, OSError, ParserError)),
-                  **account_config.SYNC_RETRY_KWARGS)
     def _read_csv(*args, **kwargs):
         path = args[0]
         if not os.path.exists(path):
@@ -505,8 +500,15 @@ class AnXinDMATradeGate(AbsTradeGate):
         logger.info("setup trade gate")
         self._options = options
 
+        ctx = Context.get_instance()
+        runtime_dir = options.get("runtime_dir", scheduler_config.RUNTIME_DIR)
+        self._data_dir = os.path.join(runtime_dir, "data")
+        self._data_file = os.path.join(self._data_dir, f"{ctx.task_name}_{self._date.strftime('%Y%m%d')}.json")
+
+        self._file_coding = self._options.get("coding", sys.getfilesystemencoding())
+
         _sync_retry_kwargs = options.get("sync_retry_kwargs", self.DEFAULT_SYNC_RETRY_KWARGS)
-        AnXinDMATradeGate._read_csv = simple_retry(_sync_retry_kwargs)(self.sync_balance)
+        AnXinDMATradeGate._read_csv = simple_retry(**_sync_retry_kwargs)(AnXinDMATradeGate._read_csv)
 
         if not os.path.exists(self._data_dir):
             os.makedirs(self._data_dir)

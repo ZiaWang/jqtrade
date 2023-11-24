@@ -8,7 +8,7 @@ def setup():
     project_dir = os.path.abspath(os.path.join(this_dir, ".."))
     sys.path.append(project_dir)
 
-    from jqtrade.scheduler.log import setup_logger
+    from jqtrade.common.log import setup_logger
     setup_logger("DEBUG")
 
 

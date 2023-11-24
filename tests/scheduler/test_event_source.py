@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pytest
 import datetime
 
 from jqtrade.scheduler.event_source import EventSource, EventSourceScheduler, TimeExprParser
@@ -86,7 +87,19 @@ class TestEvent6(Event):
     pass
 
 
-def test_gen_events():
+@pytest.fixture()
+def context():
+    from jqtrade.scheduler.strategy import Strategy
+    from jqtrade.scheduler.context import Context
+    from jqtrade.scheduler.bus import EventBus
+    from jqtrade.scheduler.loop import EventLoop
+    from jqtrade.scheduler.loader import Loader
+    from jqtrade.scheduler.event_source import EventSourceScheduler
+    ctx = Context("test", EventBus(), EventLoop(), EventSourceScheduler(), Loader("../demo/demo.py"), False)
+    strategy = Strategy(ctx)
+
+
+def test_gen_events(context):
     today = datetime.date.today()
     old_cfg = bool(config.ENABLE_HISTORY_START)
 

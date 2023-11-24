@@ -42,7 +42,16 @@ def parse_dt(dt):
         else:
             return datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
     else:
-        raise ValueError("invalid dt: %s" % dt)
+        raise ValueError(f"invalid dt: {dt}")
+
+
+def parse_time(t):
+    if isinstance(t, datetime.time):
+        return t
+    elif isinstance(t, str):
+        return datetime.datetime.strptime(t, "%H:%M:%S").time()
+    else:
+        raise ValueError(f"invalid time: {t}")
 
 
 def dt_to_milliseconds(dt):

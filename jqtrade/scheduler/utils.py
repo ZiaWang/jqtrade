@@ -46,3 +46,15 @@ def get_activate_task_process():
     except psutil.AccessDenied:
         print("检测到你没有管理员权限，当前进程需要管理员权限来检查运行中的实盘进程")
         raise
+
+
+def parse_env(env, sep=";"):
+    ret = {}
+    envs = env.split(sep)
+    for _env in envs:
+        _env = _env.strip()
+        _k, _v = _env.split("=")
+        _k = _k.strip()
+        _v = _v.strip()
+        ret[_k] = _v
+    return ret

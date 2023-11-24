@@ -126,9 +126,13 @@ class EventSource(object):
 
     @staticmethod
     def expr_to_time(day, time_expr):
+        ctx = Context.get_instance()
+        open_time = ctx.strategy.options.get("market_open_time", config.MARKET_OPEN_TIME)
+        close_time = ctx.strategy.options.get("market_close_time", config.MARKET_CLOSE_TIME)
+
         bases = {
-            'open': datetime.datetime.combine(day, config.MARKET_OPEN_TIME),
-            'close': datetime.datetime.combine(day, config.MARKET_CLOSE_TIME),
+            'open': datetime.datetime.combine(day, open_time),
+            'close': datetime.datetime.combine(day, close_time),
         }
         base, op, offset = TimeExprParser.parse(time_expr)
 
@@ -151,26 +155,26 @@ class EventSourceScheduler(object):
     def schedule(self, event_source):
         self.__class__._unique_id += 1
         schedule_id = self.__class__._unique_id
-        logger.debug("schedule event_source: %s, schedule_id: %s" % (event_source, schedule_id))
+        logger.debug(f"schedule event_source: {event_source}, schedule_id: {schedule_id}")
         self._event_sources[schedule_id] = event_source
 
         ctx = Context.get_instance()
 
         def reschedule(es):
-            logger.debug("reschedule event_source: %s" % es)
+            logger.debug(f"reschedule event_source: {es}")
             self.unschedule(schedule_id)
             self.schedule(es)
 
         def callback():
             if schedule_id not in self._event_sources:
-                logger.debug("schedule schedule_id(%s) not found" % schedule_id)
+                logger.debug(f"schedule schedule_id({schedule_id}) not found")
                 return
             dt_evt = event_source.get_next_event()
             if not dt_evt:
                 logger.debug("schedule event not found")
                 return
             dt, evt = dt_evt
-            logger.debug("schedule emit event: %s, dt: %s" % (evt, dt))
+            logger.debug(f"schedule emit event: {evt}, dt: {dt}")
             ctx.event_bus.emit(evt)
             push_next_msg()
 
@@ -179,7 +183,7 @@ class EventSourceScheduler(object):
             if not dt_evt:
                 return
             dt, evt = dt_evt
-            logger.debug("schedule push event: %s, dt: %s" % (evt, dt))
+            logger.debug(f"schedule push event: {evt}, dt: {dt}")
             ctx.loop.push_message(Message(
                 time=dt_to_milliseconds(dt),
                 callback=callback,
@@ -190,7 +194,7 @@ class EventSourceScheduler(object):
         return schedule_id
 
     def unschedule(self, schedule_id):
-        logger.debug("unschedule event_source. schedule_id: %s" % schedule_id)
+        logger.debug(f"unschedule event_source. schedule_id: {schedule_id}")
         self._event_sources.pop(schedule_id, None)
 
 
@@ -203,7 +207,7 @@ class TimeExprParser(object):
     def _parse_offset(offset):
         m = re.match(r'^(([0-9]{1,2}[hms]){1,3})$', offset)
         if m is None:
-            raise InvalidParam('invalid time offset %s' % offset)
+            raise InvalidParam(f'invalid time offset: {offset}')
         ret = re.findall(r'([0-9]{1,2})([hms])', offset)
         ret = dict((v, int(k)) for k, v in ret)
         return datetime.timedelta(hours=ret.get('h', 0), minutes=ret.get('m', 0), seconds=ret.get('s', 0))
@@ -214,10 +218,10 @@ class TimeExprParser(object):
         if len(ret) == 1:
             base = ret[0]
             if base not in cls.ALLOWED_BASE:
-                raise InvalidParam('invalid time base %s, time base must be one of %s' % (base, cls.ALLOWED_BASE))
+                raise InvalidParam(f'invalid time base {base}, time base must be one of {cls.ALLOWED_BASE}')
             return base, '+', datetime.timedelta()
         elif len(ret) != 3:
-            raise InvalidParam('invalid time expr %s' % expr)
+            raise InvalidParam(f'invalid time expr {expr}')
         else:
             base, op, offset = ret
             return base, op, cls._parse_offset(offset)

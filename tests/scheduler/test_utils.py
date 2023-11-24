@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from jqtrade.scheduler.utils import dt_to_milliseconds, parse_task_info, get_activate_task_process
+from jqtrade.common.utils import dt_to_milliseconds
+from jqtrade.scheduler.utils import parse_task_info
 
 
 def test_dt_to_milliseconds():

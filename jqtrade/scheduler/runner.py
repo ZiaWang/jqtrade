@@ -13,23 +13,11 @@ from .event_source import EventSourceScheduler
 from .loop import EventLoop
 from .bus import EventBus
 from .context import Context
-from .utils import get_activate_task_process, parse_task_info
+from .utils import get_activate_task_process, parse_task_info, parse_env
 from .config import setup_scheduler_config, get_config as get_scheduler_config
 
 
 logger = sys_logger.getChild("runner")
-
-
-def _parse_env(env, sep=";"):
-    ret = {}
-    envs = env.split(sep)
-    for _env in envs:
-        _env = _env.strip()
-        _k, _v = _env.split("=")
-        _k = _k.strip()
-        _v = _v.strip()
-        ret[_k] = _v
-    return ret
 
 
 def _exist_repeated_task(task_name):
@@ -50,40 +38,41 @@ class TaskRunner(object):
 
     def __init__(self, code_file, out_file, task_name, env, debug=False, config=None):
         if not os.path.exists(code_file):
-            raise FileNotFoundError("code file not found, path=%s" % code_file)
+            raise FileNotFoundError(f"未找到策略代码文件，path={code_file}")
         self._code_file = code_file
 
         if _exist_repeated_task(task_name):
-            raise TaskError("task(%s) already exists" % task_name)
+            raise TaskError(f"检测到机器上已经运行了任务：{task_name}，不能重复运行名称相同的任务，"
+                            f"需要停止该重复任务或修改当前任务名称避免重复")
 
         self._task_name = task_name
 
-        self._out_file = out_file
+        self._debug = debug
         log_level = "DEBUG" if debug else "INFO"
+        self._out_file = out_file
         if out_file:
             setup_file_logger(out_file, log_level)
         else:
             setup_logger(log_level)
 
-        self._env = _parse_env(env) if env else {}
+        self._env = parse_env(env) if env else {}
         os.environ.update(self._env)
         if "PYTHONPATH" in self._env:
-            sys.path.extend(self._env["PYTHONPATH"].split(":"))
-
-        self._debug = debug
+            for _py_path in reversed(self._env["PYTHONPATH"].split(":")):
+                sys.path.insert(0, _py_path)
 
         if config:
-            path = os.path.expanduser(config)
+            path = os.path.abspath(os.path.expanduser(config))
             if not os.path.exists(path):
-                raise FileNotFoundError("找不到自定义配置文件: %s" % path)
+                raise FileNotFoundError(f"找不到自定义配置文件: {path}")
         self._config = config
 
     def run(self):
-        logger.info("start strategy runner. code_file=%s, out_file=%s, task_name=%s, env=%s, debug=%s" % (
-            self._code_file, self._out_file, self._task_name, self._env, self._debug
-        ))
+        logger.info(f"开始启动策略进程。策略代码路径：{self._code_file}, 日志文件：{self._out_file}, "
+                    f"任务名称：{self._task_name}，环境变量：{self._env}, debug模式：{self._debug}")
 
         if self._config:
+            logger.info(f"scheduler模块加载用户自定义配置：{self._config}")
             setup_scheduler_config(self._config)
 
         event_loop = EventLoop()
@@ -96,18 +85,25 @@ class TaskRunner(object):
 
         scheduler_config = get_scheduler_config()
         if scheduler_config.SETUP_ACCOUNT:
+            logger.info("初始化account模块")
             from ..account.account import Account
             from ..account.portfolio import Portfolio
             from ..account.config import setup_account_config, get_config as get_account_config
             if self._config:
+                logger.info(f"account模块加载用户自定义配置：{self._config}")
                 setup_account_config(self._config)
             account_config = get_account_config()
             if not account_config.TRADE_GATE:
-                raise ConfigError("未配置 trade gate，")
+                raise ConfigError("未配置trade gate")
 
-            module_name, gate_name = account_config.TRADE_GATE.rsplit(".", 1)
-            module = import_module(module_name)
-            trade_gate = getattr(module, gate_name)()
+            try:
+                module_name, gate_name = account_config.TRADE_GATE.rsplit(".", 1)
+                module = import_module(module_name)
+                trade_gate = getattr(module, gate_name)()
+            except Exception as e:
+                logger.error(f"初始化trade gate失败，error={e}")
+                raise
+
             context.trade_gate = trade_gate
             account = Account(context)
             context.account = account

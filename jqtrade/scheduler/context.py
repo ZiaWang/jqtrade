@@ -23,6 +23,7 @@ class Context(object):
         self._account = None
         self._trade_gate = None
         self._portfolio = None
+        self._strategy = None
 
         self.__class__._instance = self
 
@@ -101,3 +102,11 @@ class Context(object):
     @property
     def task_name(self):
         return self._task_name
+
+    @property
+    def strategy(self):
+        return self._strategy
+
+    @strategy.setter
+    def strategy(self, s):
+        self._strategy = s

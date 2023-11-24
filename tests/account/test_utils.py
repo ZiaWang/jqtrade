@@ -2,7 +2,7 @@
 import time
 import pytest
 
-from jqtrade.account.utils import generate_unique_number, simple_retry
+from jqtrade.common.utils import generate_unique_number, simple_retry
 
 
 def test_order_id_producer():

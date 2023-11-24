@@ -59,7 +59,6 @@ class Account(AbsAccount):
     """ 策略账户类
 
     支持的options：
-        "use_account": bool, 策略是否使用account模块，不启用account模块时，仅可用于运行定时任务
         "sync_balance": bool，是否开启同步资金
         "sync_order": bool，是否开启同步订单
         "sync_internal": 浮点数，每次同步的间隔时间，默认5秒
