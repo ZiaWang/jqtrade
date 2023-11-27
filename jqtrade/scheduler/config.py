@@ -4,6 +4,11 @@ import datetime
 
 
 class SchedulerConfig(object):
+    """
+    Usage:
+        存放scheduler模块的默认配置
+    """
+
     _instance = None
 
     def __init__(self):
@@ -14,8 +19,11 @@ class SchedulerConfig(object):
         self.ENABLE_HISTORY_START = False
 
         # 交易时间段设置
+        # 开盘事件
         self.MARKET_OPEN_TIME = datetime.time(9, 30)
+        # 收盘时间
         self.MARKET_CLOSE_TIME = datetime.time(15, 0)
+        # 交易时间区间
         self.MARKET_PERIOD = [
             (datetime.time(9, 30), datetime.time(11, 30)),
             (datetime.time(13, 0), datetime.time(15, 0)),
@@ -46,10 +54,12 @@ def _load_config(path):
 
 
 def get_config():
+    """ 获取scheduler配置示例 """
     return SchedulerConfig.get_instance()
 
 
 def setup_scheduler_config(path):
+    """ 加载外部自定义配置 """
     path = os.path.abspath(os.path.expanduser(path))
     config = SchedulerConfig.get_instance()
     custom_config = _load_config(path)

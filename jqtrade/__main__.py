@@ -11,7 +11,7 @@ def main():
     start_task_parser = sub_parsers.add_parser("start_task")
     start_task_parser.add_argument("-n", "--name", required=True, help="实盘任务名称，唯一标识该实盘任务，不能重复")
     start_task_parser.add_argument("-c", "--code", required=True, help="策略代码路径")
-    start_task_parser.add_argument("-o", "--out", required=False, default=None, help="日志路径，不指定是打印到标准输出/错误")
+    start_task_parser.add_argument("-o", "--out", required=False, default=None, help="日志路径，不指定时打印到标准输出/错误")
     start_task_parser.add_argument("-e", "--env", required=False, default=None,
                                    help="指定实盘策略进程运行环境变量，多个环境变量使用分号分隔。"
                                         "示例: -e PATH=./bin:/usr/bin;PYTHONPATH=./package;USER=test")
@@ -29,7 +29,8 @@ def main():
     stop_task_parser.add_argument("-p", "--pid", type=int, default=None, help="通过指定实盘进程pid来停止实盘")
     stop_task_parser.add_argument("--all", action="store_true", help="停止所有运行中的实盘任务")
     stop_task_parser.add_argument("-s", "--signal", default="SIGTERM",
-                                  choices=["SIGTERM", "SIGKILL"], help="指定停止进程的信号")
+                                  choices=["SIGTERM", "SIGKILL"], help="指定停止进程的信号，默认SIGTERM，"
+                                                                       "希望强制退出时请使用SIGKILL")
     stop_task_parser.set_defaults(func=stop_task)
 
     options = parser.parse_args()
@@ -52,6 +53,9 @@ def get_tasks(options):
     from .scheduler.utils import get_activate_task_process, parse_task_info
 
     active_tasks = get_activate_task_process()
+    if not active_tasks:
+        print("当前没有运行中的实盘任务进程")
+        return
 
     print("当前活跃的实盘任务进程".center(30, "-"))
     for _p in active_tasks:
@@ -89,7 +93,7 @@ def stop_task(options):
     def _stop(_p):
         _p.send_signal(sig)
         sent_pid.append(_p.pid)
-        print("尝试停止进程 %s，发送信号 %s " % (_p.pid, sig))
+        print(f"尝试停止进程 {_p.pid}，已向该进程发送停止信号 {sig}")
 
     if options.all:
         for _p in active_tasks:
@@ -113,4 +117,3 @@ def stop_task(options):
 
 if __name__ == '__main__':
     main()
-

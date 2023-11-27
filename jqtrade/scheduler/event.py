@@ -4,14 +4,20 @@
 class EventPriority:
     DAILY = DEFAULT = 0
     EVERY_MINUTE = 1
+    ACCOUNT_SYNC = 2
 
 
 class Event(object):
-    """ 事件基类，所有事件类都要继承自此类 """
+    """
+    Usage:
+        事件基类，所有事件类都要继承自此类
+    """
+
+    # 时间优先级，值越大优先级越高
     priority = EventPriority.DEFAULT
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.__dict__)
+        return f'{self.__name__}(priority={self.priority})'
 
 
 _event_classes = {}

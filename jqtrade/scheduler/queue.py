@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+from ..common.log import sys_logger
 
 import heapq
 import threading
+
+
+logger = sys_logger.getChild("queue")
 
 
 class QueueEmptyError(Exception):
@@ -9,23 +13,29 @@ class QueueEmptyError(Exception):
 
 
 class PriorityQueue(object):
-    """ 非线程安全的优先队列 """
+    """
+    Usage:
+        非线程安全的优先队列
+    """
 
     def __init__(self):
         self._queue = []
 
     def push(self, item, sort_key):
+        logger.debug(f"push queue. item={item}, sort_key={sort_key}")
         heapq.heappush(self._queue, (sort_key, item))
 
     def pop(self):
         try:
-            return heapq.heappop(self._queue)[1]
+            sort_key, item = heapq.heappop(self._queue)[1]
+            logger.debug(f"pop queue. item={item}, sort_key={sort_key}")
         except IndexError:
             raise QueueEmptyError()
 
     def top(self):
         try:
-            return self._queue[0][1]
+            sort_key, item = self._queue[0]
+            logger.debug(f"pop queue. item={item}, sort_key={sort_key}")
         except IndexError:
             raise QueueEmptyError()
 
@@ -34,7 +44,10 @@ class PriorityQueue(object):
 
 
 class ThreadSafeQueue(PriorityQueue):
-    """ 线程安全的优先队列 """
+    """
+    Usage:
+        线程安全的优先队列
+    """
 
     def __init__(self):
         super(ThreadSafeQueue, self).__init__()

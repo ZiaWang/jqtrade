@@ -2,7 +2,10 @@
 
 
 class Message(object):
-    """ 封装事件的消息类，事件队列中的实际对象 """
+    """
+    Usage:
+        封装事件的消息类，事件队列中的实际对象
+    """
 
     _unique_num = 0
 
@@ -20,4 +23,5 @@ class Message(object):
         return self.time, -self.priority, self.seq_number
 
     def __repr__(self):
-        return "Message(%s)" % self.__dict__
+        return f"Message(time={self.time}, callback={self.callback.__name__}, " \
+               f"priority={self.priority}, seq_number={self.seq_number})"

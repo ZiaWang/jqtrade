@@ -51,7 +51,7 @@ class OrderStatus(Enum):
         try:
             return cls.__members__[status]
         except KeyError:
-            raise ValueError("bad status: %s" % status)
+            raise ValueError(f"bad status: {status}")
 
 
 class OrderSide(Enum):
@@ -73,7 +73,7 @@ class OrderSide(Enum):
         try:
             return cls.__members__[side]
         except KeyError:
-            raise ValueError("invalid side: %s" % side)
+            raise ValueError(f"invalid side: {side}")
 
 
 class OrderAction(Enum):
@@ -95,7 +95,7 @@ class OrderAction(Enum):
         try:
             return cls.__members__[action]
         except KeyError:
-            raise ValueError("bad action: %s" % action)
+            raise ValueError(f"bad action: {action}")
 
 
 class OrderStyle(object):
@@ -116,7 +116,7 @@ class OrderStyle(object):
             return style
 
         if style not in ("market", "limit"):
-            raise ValueError("invalid style: %s" % style)
+            raise ValueError(f"invalid style: {style}")
 
         if style == "market":
             return MarketOrderStyle(price)

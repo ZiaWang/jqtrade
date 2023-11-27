@@ -34,7 +34,12 @@ def _exist_repeated_task(task_name):
 
 
 class TaskRunner(object):
-    """ 启动策略进程的入口类 """
+    """
+    Usage:
+        1. 解析启动参数
+        2. 检查和初始化启动环境
+        3. 启动策略进程
+    """
 
     def __init__(self, code_file, out_file, task_name, env, debug=False, config=None):
         if not os.path.exists(code_file):

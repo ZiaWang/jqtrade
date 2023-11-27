@@ -18,7 +18,10 @@ logger = sys_logger.getChild("event_source")
 
 
 class EventSource(object):
-    """ 事件源类，用于根据用户设置的定时任务生成对应事件 """
+    """
+    Usage:
+        事件源类，用于根据用户设置的定时任务生成对应事件
+    """
 
     def __init__(self, start=None, end=None):
         """
@@ -41,6 +44,8 @@ class EventSource(object):
         if self._start is None or not config.ENABLE_HISTORY_START:
             self._start = datetime.datetime.now()
 
+        logger.debug(f"setup event_source，start: {self._start}, end: {self._end}")
+
         self._reset_events_if_needed()
 
     def _reset_events_if_needed(self):
@@ -59,6 +64,7 @@ class EventSource(object):
         return days
 
     def daily(self, event_cls, time_expr):
+        logger.debug(f"add daily task. event_cls: {event_cls}, time_expr: {time_expr}")
         self._daily.append((time_expr, event_cls))
         self.on_events_changed()
 
@@ -74,14 +80,22 @@ class EventSource(object):
     def peek_next_event(self):
         self.gen_events()
         if len(self._events) == 0:
+            logger.debug("peek_next_event. events empty")
             return
-        return self._events[0]
+
+        evt_dt = self._events[0]
+        logger.debug(f"peek_next_event. event: {evt_dt[1]}m dt: {evt_dt[0]}")
+        return evt_dt
 
     def get_next_event(self):
         self.gen_events()
         if len(self._events) == 0:
+            logger.debug("get_next_event. events empty")
             return
-        return self._events.pop(0)
+
+        evt_dt = self._events.pop(0)
+        logger.debug(f"get_next_event. event: {evt_dt[1]}m dt: {evt_dt[0]}")
+        return evt_dt
 
     def gen_events(self):
         self._reset_events_if_needed()
@@ -145,7 +159,10 @@ class EventSource(object):
 
 
 class EventSourceScheduler(object):
-    """ 事件源调度器，一个策略可能会有多个事件源。此调度器用于管理事件源，通过事件源生成事件并推送到队列中 """
+    """
+    Usage:
+        事件源调度器，一个策略可能会有多个事件源。此调度器用于管理事件源，通过事件源生成事件并推送到队列中
+    """
 
     _unique_id = 0
 
@@ -155,26 +172,25 @@ class EventSourceScheduler(object):
     def schedule(self, event_source):
         self.__class__._unique_id += 1
         schedule_id = self.__class__._unique_id
-        logger.debug(f"schedule event_source: {event_source}, schedule_id: {schedule_id}")
+        logger.debug(f"schedule es: {event_source}, schedule_id: {schedule_id}")
         self._event_sources[schedule_id] = event_source
 
         ctx = Context.get_instance()
 
         def reschedule(es):
-            logger.debug(f"reschedule event_source: {es}")
+            logger.debug(f"reschedule es: {es}")
             self.unschedule(schedule_id)
             self.schedule(es)
 
         def callback():
             if schedule_id not in self._event_sources:
-                logger.debug(f"schedule schedule_id({schedule_id}) not found")
+                logger.debug(f"schedule_id({schedule_id}) not found")
                 return
             dt_evt = event_source.get_next_event()
             if not dt_evt:
-                logger.debug("schedule event not found")
+                logger.debug("event not found")
                 return
             dt, evt = dt_evt
-            logger.debug(f"schedule emit event: {evt}, dt: {dt}")
             ctx.event_bus.emit(evt)
             push_next_msg()
 
@@ -183,7 +199,6 @@ class EventSourceScheduler(object):
             if not dt_evt:
                 return
             dt, evt = dt_evt
-            logger.debug(f"schedule push event: {evt}, dt: {dt}")
             ctx.loop.push_message(Message(
                 time=dt_to_milliseconds(dt),
                 callback=callback,
@@ -194,7 +209,7 @@ class EventSourceScheduler(object):
         return schedule_id
 
     def unschedule(self, schedule_id):
-        logger.debug(f"unschedule event_source. schedule_id: {schedule_id}")
+        logger.debug(f"unschedule es. schedule_id: {schedule_id}")
         self._event_sources.pop(schedule_id, None)
 
 

@@ -12,7 +12,7 @@ def generate_unique_number():
 
 def simple_retry(on_exception=None, max_attempts=3, delay_seconds=0.1):
     if on_exception and not callable(on_exception):
-        raise ValueError("on_exception参数必须穿入一个callable对象")
+        raise ValueError("on_exception参数必须传入一个callable对象")
 
     def _wrap(func):
         def _retry(*args, **kwargs):

@@ -5,7 +5,10 @@ from ..common.exceptions import InternalError
 
 
 class Context(object):
-    """ 上下文对象，方便各对象之间调用 """
+    """
+    Usage:
+        上下文对象，方便各对象之间调用
+    """
 
     _instance = None
 
@@ -67,12 +70,12 @@ class Context(object):
 
     @property
     def current_dt(self):
-        """ 当前真实时间 """
+        """ 当前真实无力时间 """
         return self._event_loop.current_dt
 
     @property
     def strategy_dt(self):
-        """ 策略中当前逻辑事件，每次处理某个事件时更新，用于方便了解处理到哪个事件了 """
+        """ 策略中当前逻辑时间，每次处理某个事件时更新，用于方便了解处理到哪个事件了 """
         return self._event_loop.strategy_dt
 
     @property

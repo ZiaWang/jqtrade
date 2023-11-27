@@ -102,11 +102,15 @@ class Account(AbsAccount):
 
         # 初始化account相关事件循环配置，并触发一次资金、持仓、订单同步
         if self.need_sync_balance or self.need_sync_order:
+            logger.info(f"初始化同步定时任务。sync_balance: {self.need_sync_balance}, sync_order: {self.need_sync_order}")
             self._setup_sync_timer()
 
             # setup触发一次同步
-            self.sync_balance()
-            self.sync_orders()
+            if self.need_sync_balance:
+                self.sync_balance()
+
+            if self.need_sync_order:
+                self.sync_orders()
 
     @property
     def need_sync_balance(self):
@@ -114,14 +118,14 @@ class Account(AbsAccount):
 
     @property
     def need_sync_order(self):
-        return bool(self._options.get("sync_balance", config.SYNC_BALANCE))
+        return bool(self._options.get("sync_order", config.SYNC_BALANCE))
 
     def _setup_sync_timer(self):
         logger.info("setup account sync timer")
         # 初始化定时任务事件
         from ..scheduler.event_source import EventSource
         from ..scheduler.event import create_event_class, EventPriority
-        event_cls = create_event_class("AccountSyncEvent", priority=EventPriority.DEFAULT)
+        event_cls = create_event_class("AccountSyncEvent", priority=EventPriority.ACCOUNT_SYNC)
         event_source = EventSource(start=self._ctx.start, end=self._ctx.end)
         now = datetime.datetime.now().replace(microsecond=0)
 
@@ -175,7 +179,7 @@ class Account(AbsAccount):
                 logger.error(f"发起撤单失败，本地找不到内部委托id为{order_id}的委托")
                 return
 
-            logger.info("提交撤单，被撤订单id：%s" % order_id)
+            logger.info(f"提交撤单，被撤订单id：{order_id}")
             self._ctx.trade_gate.cancel_order(order_id)
         except Exception as e:
             logger.exception(f"内部撤单异常，order_id={order_id}, error={e}")
@@ -234,6 +238,15 @@ class Account(AbsAccount):
             self.has_synced = True
         except Exception as e:
             logger.exception(f"同步订单失败，error={e}")
+
+    def on_order_created(self, order):
+        if order.side == OrderSide.long:
+            pos = self._long_positions.get(order.code)
+        else:
+            pos = self._short_positions.get(order.code)
+
+        if pos:
+            pos.on_order_created(order)
 
     def on_order_updated(self, local_order, remote_order):
         self._notify_changed(local_order, remote_order)

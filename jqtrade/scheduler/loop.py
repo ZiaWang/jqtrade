@@ -15,11 +15,11 @@ logger = sys_logger.getChild("loop")
 
 
 class EventLoop(object):
-    """ 事件循环类
-
+    """
+    Usage:
         1. 管理事件循环
         2. 取出事件并触发事件回调
-        3. 监听外部信号
+        3. 监听并处理外部信号
     """
 
     def __init__(self):
@@ -38,6 +38,7 @@ class EventLoop(object):
         self._strategy_time = None
 
     def setup(self):
+        logger.info("setup loop")
         # stop_task
         self.register_signal_callback(signal.SIGTERM, self.handle_signal)
 
@@ -64,7 +65,6 @@ class EventLoop(object):
         while not self._stop_requested:
             try:
                 message = self._queue.pop()
-                logger.debug(f"check_queue. pop message: {message}")
             except QueueEmptyError:
                 logger.info("事件队列已空，退出事件循环")
                 self._stop_requested = True
@@ -85,7 +85,6 @@ class EventLoop(object):
                     timeout=wait_time,
                     repeat=0)
 
-                logger.debug(f"check_queue. push message: {message}")
                 self.push_message(message, notify=False)
                 break
             else:

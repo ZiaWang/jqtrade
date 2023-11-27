@@ -82,7 +82,6 @@ class Strategy(object):
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
         self._user_module.set_options = self.set_options
-        # self._user_module.set_account = self.set_account
 
         # account模块相关API
         if config.SETUP_ACCOUNT:
@@ -97,7 +96,7 @@ class Strategy(object):
 
     def schedule(self):
         for _desc in self._schedules:
-            logger.info(f"schedule user daily task: {_desc}")
+            logger.info(f"设置定时任务: {_desc}")
 
             _callback = self._get_handle(_desc['name'])
             _cls_name = f"Scheduler_{_desc['name']}_{self._schedule_count}"
@@ -131,7 +130,7 @@ class Strategy(object):
             self._schedule_count += 1
 
     def run_daily(self, func, time):
-        logger.debug(f"strategy call run_daily. func={func}, time={time}")
+        logger.info(f"run_daily. func={func.__name__}, time={time}")
         if not self._is_scheduler_allowed:
             raise InvalidCall('run_daily函数只允许在process_initialize中调用')
 
@@ -168,7 +167,7 @@ class Strategy(object):
             if _f not in kwargs:
                 raise InvalidParam("set_options必须通过'account_no'选项设置资金账号")
 
-        # parse core options
+        # parse scheduler options
         if "use_account" in kwargs:
             kwargs["use_account"] = bool(kwargs["use_account"])
 
@@ -211,7 +210,7 @@ class Strategy(object):
         # set options
         self._options = kwargs
 
-        # 做一些 set_options 后需要立即执行的初始化工作
+        # set_options 后需要立即执行的初始化工作，避免用户查询到未同步的account信息
         runtime_dir = kwargs.get("runtime_dir", config.RUNTIME_DIR)
         if not os.path.isdir(runtime_dir):
             os.makedirs(runtime_dir)

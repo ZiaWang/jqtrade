@@ -10,7 +10,10 @@ logger = sys_logger.getChild("loader")
 
 
 class Loader(object):
-    """ 加载用户策略代码代码 """
+    """
+    Usage:
+        加载用户策略代码代码
+    """
 
     def __init__(self, path):
         self.code_dir, self.code_file = os.path.split(path)
