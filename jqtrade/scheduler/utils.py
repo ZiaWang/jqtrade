@@ -37,6 +37,8 @@ def get_activate_task_process():
                     # windows有一些系统进程，即使有管理员权限，p.cmdline仍会报错，这部分进程忽略
                     # linux没有此问题
                     pass
+            except psutil.NoSuchProcess:
+                pass
 
         for _p in task_process:
             if _p.pid in parent_pid:

@@ -8,7 +8,7 @@ def main():
     sub_parsers = parser.add_subparsers()
 
     # 启动实盘任务
-    start_task_parser = sub_parsers.add_parser("start_task")
+    start_task_parser = sub_parsers.add_parser("start_task", help="创建新的实盘任务")
     start_task_parser.add_argument("-n", "--name", required=True, help="实盘任务名称，唯一标识该实盘任务，不能重复")
     start_task_parser.add_argument("-c", "--code", required=True, help="策略代码路径")
     start_task_parser.add_argument("-o", "--out", required=False, default=None, help="日志路径，不指定时打印到标准输出/错误")
@@ -20,11 +20,11 @@ def main():
     start_task_parser.set_defaults(func=start_task)
 
     # 查询运行中的实盘任务
-    get_tasks_parser = sub_parsers.add_parser("get_tasks")
+    get_tasks_parser = sub_parsers.add_parser("get_tasks", help="查询当前运行中的实盘任务")
     get_tasks_parser.set_defaults(func=get_tasks)
 
     # 停止实盘任务
-    stop_task_parser = sub_parsers.add_parser("stop_task")
+    stop_task_parser = sub_parsers.add_parser("stop_task", help="停止运行中的实盘任务")
     stop_task_parser.add_argument("-n", "--name", default=None, help="通过指定实盘名称来停止实盘")
     stop_task_parser.add_argument("-p", "--pid", type=int, default=None, help="通过指定实盘进程pid来停止实盘")
     stop_task_parser.add_argument("--all", action="store_true", help="停止所有运行中的实盘任务")
