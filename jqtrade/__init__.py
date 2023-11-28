@@ -6,4 +6,4 @@ version_info = tuple([int(num) for num in __version__.split('.')])
 
 
 __author__ = "wangzihao"
-__email__ = "850933437@qq.com"
+__email__ = "wangzihao@joinquant.com"
