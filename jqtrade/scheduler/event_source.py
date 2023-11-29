@@ -84,7 +84,7 @@ class EventSource(object):
             return
 
         evt_dt = self._events[0]
-        logger.debug(f"peek_next_event. event: {evt_dt[1]}m dt: {evt_dt[0]}")
+        logger.debug(f"peek_next_event. event: {evt_dt[1]} dt: {evt_dt[0]}")
         return evt_dt
 
     def get_next_event(self):

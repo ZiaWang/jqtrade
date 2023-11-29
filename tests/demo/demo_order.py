@@ -30,8 +30,10 @@ g = {}
 def do_order(context):
     log.info("do_order run.")
 
-    order_id = order("300248.XSHE", -6100, LimitOrderStyle(9.66))
+    log.info("pos before trade: %s" % (context.portfolio.long_positions["000001.XSHE"]))
+    order_id = order("000001.XSHE", -10000, LimitOrderStyle(9.74))
     log.info("用户下单，order id：%s" % order_id)
+    log.info("pos after trade: %s" % (context.portfolio.long_positions["000001.XSHE"]))
 
     g["order_id"] = order_id
 
@@ -46,4 +48,4 @@ def check_orders(context):
     for _order in get_orders():
         log.info("查询本地订单：%s" % _order._UserOrder__order.__dict__)
 
-    log.info(f"pos: {context.portfolio.long_positions['300248.XSHE']}")
+    log.info(f"check_orders pos: {context.portfolio.long_positions['000001.XSHE']}")

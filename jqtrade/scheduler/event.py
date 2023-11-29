@@ -17,7 +17,7 @@ class Event(object):
     priority = EventPriority.DEFAULT
 
     def __repr__(self):
-        return f'{self.__name__}(priority={self.priority})'
+        return f'{self.__class__.__name__}(priority={self.priority})'
 
 
 _event_classes = {}

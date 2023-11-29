@@ -27,15 +27,17 @@ class PriorityQueue(object):
 
     def pop(self):
         try:
-            sort_key, item = heapq.heappop(self._queue)[1]
-            logger.debug(f"pop queue. item={item}, sort_key={sort_key}")
+            sort_key, msg = heapq.heappop(self._queue)
+            logger.debug(f"pop queue. msg={msg}, sort_key={sort_key}")
+            return msg
         except IndexError:
             raise QueueEmptyError()
 
     def top(self):
         try:
-            sort_key, item = self._queue[0]
-            logger.debug(f"pop queue. item={item}, sort_key={sort_key}")
+            sort_key, msg = self._queue[0]
+            logger.debug(f"pop queue. item={msg}, sort_key={sort_key}")
+            return msg
         except IndexError:
             raise QueueEmptyError()
 

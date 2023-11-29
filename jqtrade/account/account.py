@@ -169,6 +169,7 @@ class Account(AbsAccount):
             logger.info(f"提交订单，订单id：{order_id}，code：{code}，price：{style.price}，amount：{amount}，"
                         f"action：{action}，style：{style}")
             self._ctx.trade_gate.order(order_obj)
+            self.on_order_created(order_obj)
             return order_id
         except Exception as e:
             logger.exception(f"内部下单异常，code={code}, amount={amount}, style={style}, side={side}, error={e}")
