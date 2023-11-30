@@ -34,8 +34,6 @@ class Strategy(object):
                     (datetime.time(9, 30), datetime.time(11, 30)),
                     (datetime.time(13, 0), datetime.time(15, 0)),
                 ]
-            "market_open_time": datetime.time, 默认 datetime.time(9, 30)
-            "market_close_time": datetime.time, 默认 datetime.time(15, 0)
     """
 
     TIME_DICT = {
@@ -180,12 +178,6 @@ class Strategy(object):
                 _start, _end = _period
                 periods.append((parse_time(_start), parse_time(_end)))
             kwargs["market_period"] = periods
-
-        if "market_open_time" in kwargs:
-            kwargs["market_open_time"] = parse_time(kwargs["market_open_time"])
-
-        if "market_close_time" in kwargs:
-            kwargs["market_close_time"] = parse_time(kwargs["market_close_time"])
 
         # parse account options
         if "sync_balance" in kwargs:

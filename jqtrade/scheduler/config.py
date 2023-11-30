@@ -19,11 +19,6 @@ class SchedulerConfig(object):
         self.ENABLE_HISTORY_START = False
 
         # 交易时间段设置
-        # 开盘事件
-        self.MARKET_OPEN_TIME = datetime.time(9, 30)
-        # 收盘时间
-        self.MARKET_CLOSE_TIME = datetime.time(15, 0)
-        # 交易时间区间
         self.MARKET_PERIOD = [
             (datetime.time(9, 30), datetime.time(11, 30)),
             (datetime.time(13, 0), datetime.time(15, 0)),

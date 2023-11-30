@@ -10,7 +10,7 @@ def generate_unique_number():
     return unique_number
 
 
-def simple_retry(on_exception=None, max_attempts=3, delay_seconds=0.1):
+def simple_retry(on_exception=None, max_attempts=3, attempt_internal=0.1):
     if on_exception and not callable(on_exception):
         raise ValueError("on_exception参数必须传入一个callable对象")
 
@@ -27,7 +27,7 @@ def simple_retry(on_exception=None, max_attempts=3, delay_seconds=0.1):
                     if attempts >= max_attempts:
                         raise
 
-                    time.sleep(delay_seconds)
+                    time.sleep(attempt_internal)
                     attempts += 1
         return _retry
     return _wrap

@@ -1,20 +1,20 @@
 # jqtrade
 
-jqtrade是一个用户本地运行实盘任务的框架, 它提供以下功能：
-1. 策略代码框架. 用户可以在策略代码中使用run_daily设置定时任务, 定时运行自己定义的函数. 
-2. 交易和账户管理相关API. 用户可以通过这些API实现实盘下单、撤单、查询资金、持仓功能. 
+jqtrade是一个支持用户在本地电脑上运行实盘任务的框架, 它提供了：
+1. 策略代码框架. 用户在策略代码中通过jqtrade可以设置策略进程启动时的工作以及定时任务，策略进程启动后会根据用户策略代码的设置来定时运行用户定义的函数 
+2. 交易和账户管理相关API. 用户可以通过这些API进行实盘下单、撤单、查询资金、持仓等. 
 3. 为用户提供默认的实盘交易接口. 在jqtrade内部, 已经默认实现了对接安信证券one quant DMA交易的接口, 可以直接通过上述API与你的资金账户进行交互. 只需在策略中设置好资金账户和交易接口配置即可.  
 
 
 
 # 快速上手
 ## 安装
-1. 安装python. 需要安装>=3.6.13的python版本, 可以参考python官网的安装介绍. 
-2. 安装jqtrade. 
+1. 安装python. 需要安装>=3.6.13的python版本, 请参考python官网的安装文档安装python. 
+2. 安装jqtrade. 可以直接使用`pip`来安装jqtrade【TODO: 需上传到pypi】
 ```bash
 pip install jqtrade
 ```
-3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：【待补充】. 如果你对 python熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
+3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：【TODO: 待补充】. 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
 
 ## 策略代码
 完成上述安装步骤之后, 就可以开始实现策略代码了, 下面是一个策略代码的示例：
@@ -78,10 +78,10 @@ def after_market_close(context):
     log.info("after_market_close run")
 ```
 
-策略代码中提供了基本下单、撤单、查询资金、持仓、订单的API接口, 关于这些API的详细使用, 见下面：【】
+策略代码中提供了基本下单、撤单、查询资金、持仓、订单的API接口, 关于这些API的详细使用, 见下面：【TODO: 待补充】
 
 ## 启动策略
-jqtrade提供了start_task命令可以很方便的快速启动实盘策略. 
+使用jqtrade提供的`start_task`命令可以很方便的快速启动实盘策略. 
 
 示例：
 ```bash
@@ -96,8 +96,6 @@ jqtrade start_task -c strategies/demo_strategy.py -n demo
 *注意*:
 * 实盘策略的名称需要唯一, 不能在同一台机器上启动多个相同名称的实盘任务
 * 策略代码所在目录会自动添加到sys.path, 因此你可以在策略代码中导入你自定义的模块（支持.py和.so模块, 导入.so模块时, 请注意是否与当前python版本匹配）
-
-
 
 ## 查看当前运行的策略
 如果你想查看当前机器上运行了哪些实盘任务, 可以使用get_tasks命令. 
@@ -125,6 +123,7 @@ jqtrade stop_task -n demo
 
 start_task、stop_task除了上述示例中的常用参数之外, 还有其他更详细的命令介绍, 见：【】
 
+# 使用说明
 ## 命令参考
 在安装完jqtrade之后, 就可以使用`python -m jqtrade`或直接使用`jqtrade`来执行相关命令了. 
 
@@ -205,13 +204,17 @@ stop_task用于停止运行中的策略进程，该子命令选项如下：
     * 使用`stop_task -s SIGKILL`时，策略进程会被系统直接杀掉，不管当前是否正在处理事务
 
 ## 策略框架
-策略框架指jqtrade给用户提供了用来实现策略代码，将策略代码调度起来，执行用户自定义函数的框架.
-jqtrade目前通过定时任务的机制来驱动策略执行, 用户只需要实现`process_initialize`函数，在该函数中调用jqtrade提供的`run_daily`函数，设置自己的定时任务即可。
-当然，如果你要进行实盘交易，那么在策略运行时就需要在`process_initialize`中调用set_options选项来给交易接口传递一些必要初始化参数，比如资金账号、柜台类型等等
+策略框架分成两部分：策略调度模块(scheduler)、账户管理模块(account)
+* scheduler模块实现策略代码的调度逻辑，用于驱动用户策略代码根据实际物理时间来运转
+* account模块用于管理子账户，用户在策略代码中调用的下单、撤单、查询API会通过account模块的交易接口(trade gate)与券商柜台通信，并且account模块会定时通过交易接口从券商柜台同步最新的订单状态、账户资金、账户持仓信息到本地
 
-### process_initialize介绍
+对于策略任务调度，用户只需要实现`process_initialize`函数，在该函数中调用jqtrade提供的`run_daily`函数设置自己的定时任务，在策略进程启动后，就会根据用户设置的时间来驱动用户定时任务函数的执行。
+
+对于账户管理，用户只需要在策略代码的`process_initialize`函数中，调用`set_options`来设置一些必要初始化参数即可，有关`set_options`所支持的选项和用法，见：【TODO: 待补充】
+
+### process_initialize
 `process_initialize(context)`函数是用户需要在策略代码中自己定义并实现的一个函数，并且该函数要有一个参数`context`，在该函数中，用户需要设置交易接口所需的必要参数、定时任务。
-`context`参数是jqtrade提供给用户的一个API对象，它具有一些属性方便用户来查询数据，详情见下面的介绍：【】
+`context`参数是jqtrade提供给用户的一个API对象，它具有一些属性方便用户来查询数据，详情见下面的介绍：【TODO: 待补充】
 
 示例:
 ```python
@@ -245,7 +248,87 @@ def func(context):
 * `run_daily`只能在`process_initialize`中调用，在其他地方调用会报错。
 
 ### set_options
-set_options
+`set_options(**kwargs)`用于给策略进程传递策略选项，从而控制策略进程中的一些行为。
+set_options支持的选项分成两类，一类是策略调度模块选项(scheduler)，另一类是账户管理模块选项(account)。
+* 策略调度模块选项是针对策略调度逻辑的，用来控制策略框架的一些调度行为
+* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，用户只需联系安信证券相关客户经理【TODO：待补充安信链接】，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
+  * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
+
+策略调度模块支持的选项:
+* `runtime_dir`: 设置策略进程运行时目录
+  * 选项值类型：str
+  * 默认值："~/jqtrade"
+* `use_account`: 是否加载account账户管理模块，选择不加载时jqtrade将只提供定时调度的功能，账户管理相关API将不能使用
+  * 选项值类型：bool
+  * 默认值：False
+* `market_period`: 交易时间段，目前会影响`run_daily`中`time是"every_minute"、"open"、"close"`的行为. 
+  * 选项值类型：list of tuple
+  * 默认值：`[("09:30:00", "11:30:00""), ("13:00:00", "15:00:00")]`
+  * 与`run_daily`的"time"参数对应关系:
+    * "every_minute": 程序会选取`market_period`区间每一分钟运行对应用户函数
+    * "open": 程序会选取`market_period[0][0]`作为开盘时间
+    * "close": 程序会选取`market_period[-1][-1]`作为开盘时间
+
+账户管理模块支持的选项:
+* `安信DMA交易接口(AnXinDMATradeGate)`专用选项:
+  * `account_no`: 资金账号
+    * 选项值类型：str
+    * *必须提供*
+  * `order_dir`: 安信DMA交易接口文件单路径
+    * 选项值类型：str
+    * 默认值：C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法
+    * 注意：当在安信one quant上启动该DMA交易之后，请确认设置的导出文件目录与此默认值是否一致，若不一致，请在set_options中设置实际路径
+  * `account_type`: 策略账户类型 
+    * 选项值类型：str
+    * 默认值: STOCK
+  * `counter_type`: 柜台类型
+    * 选项值类型：str
+    * 默认值: UF0
+    * 支持的值: 
+        * UM0 普通股票账户【默认此类型】
+        * UF0 金证极速股票账户
+        * AT0 华锐极速股票账户
+    * 注意：此"柜台类型"可联系安信客户经理修改，修改后在策略代码中指定新的柜台类型后方可交易。
+  * `algo_type`: 算法交易类型
+    * 选项值类型: str
+    * 默认值: DMA
+    * 注意：当前仅支持DMA
+  * `wait_lock_internal`: 写安信DMA文件单时，要用到文件锁，避免文件被同时多线程写，此选项为文件锁轮训间隔，单位：秒
+    * 选项值类型：float
+    * 默认: 0.05
+  * `wait_lock_time_out`: 写安信DMA文件单时，获取文件锁的超时时间，单位：秒
+    * 选项值类型：float
+    * 默认: 5
+  * `file_encoding`: 安信文件单的文件编码
+    * 选项值类型：str
+    * 默认：sys.getfilesystemencoding()
+  * `sync_retry_kwargs`: 从安信文件单同步资金、持仓、订单数据时，异常重试参数
+    * 选项值类型：dict，有`max_attempts`和`attempt_internal`两个key
+      * max_attempts：最大重试次数，默认3次
+      * attempt_internal：重试间隔，单位：秒，默认0.15秒
+* 账户管理模块专用选项:
+  * `sync_balance`: 是否启用资金、持仓定时同步功能
+    * 选项值类型：bool
+    * 默认: True
+  * `sync_order`: 是否启用订单定时同步功能
+    * 选项值类型：bool
+    * 默认: True
+  * `sync_period`: 同步时间区间，不设置时，默认启动后一直同步，不管当前是否是交易时间。
+    * 选项值类型：list of tuple
+    * 默认: 不设置，启动后一直同步
+    * 示例：`[("09:30:00", "11:30:00""), ("13:00:00", "15:00:00")]`
+
+
+注意：
+* 账户管理模块的选项和交易接口选项区分开，是因为前者是固定不变的，后者如果用户自己开发交易接口的话，就可以自定义交易接口选项。
+* 用户自己开发的交易接口，在setup函数中可以通过options参数获取所有策略中传递的选项
 
 
 ## 其他策略API
+### order
+### cancel_order
+### batch_order
+### batch_cancel_order
+### get_orders
+### log
+### context

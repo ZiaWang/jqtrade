@@ -146,7 +146,7 @@ class AnXinDMATradeGate(AbsTradeGate):
             格式：
                 {
                     "max_attempts": 3,          # 默认最大重试3次
-                    "delay_seconds": 0.15       # 默认每次重试间隔0.15秒
+                    "attempt_internal": 0.15       # 默认每次重试间隔0.15秒
                 }
     """
     DEFAULT_ACCOUNT_TYPE = "STOCK"
@@ -155,7 +155,7 @@ class AnXinDMATradeGate(AbsTradeGate):
     DEFAULT_ORDER_DIR = r"C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法"
     DEFAULT_SYNC_RETRY_KWARGS = {
         "max_attempts": 3,
-        "delay_seconds": 0.15
+        "attempt_internal": 0.15
     }
 
     TRADE_SIDES = {
@@ -227,6 +227,9 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         self._file_coding = None
 
+        self._wait_lock_internal = None
+        self._wait_lock_time_out = None
+
     def order(self, sys_order):
         acct_no = self._options.get("account_no")
         if not acct_no:
@@ -295,9 +298,9 @@ class AnXinDMATradeGate(AbsTradeGate):
                     fp.write(line)
                     break
                 except BlockingIOError:
-                    if time.time() - start >= self.WAIT_LOCK_TIME_OUT:
+                    if time.time() - start >= self._wait_lock_time_out:
                         raise TimeOut("waiting file lock time out")
-                    time.sleep(self.WAIT_LOCK_INTERNAL)
+                    time.sleep(self._wait_lock_internal)
                 finally:
                     portalocker.unlock(fp)
 
@@ -510,6 +513,9 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         _sync_retry_kwargs = options.get("sync_retry_kwargs", self.DEFAULT_SYNC_RETRY_KWARGS)
         AnXinDMATradeGate._read_csv = simple_retry(**_sync_retry_kwargs)(AnXinDMATradeGate._read_csv)
+
+        self._wait_lock_internal = options.get("wait_lock_internal", self.WAIT_LOCK_INTERNAL)
+        self._wait_lock_time_out = options.get("wait_lock_time_out", self.WAIT_LOCK_TIME_OUT)
 
         if not os.path.exists(self._data_dir):
             os.makedirs(self._data_dir)

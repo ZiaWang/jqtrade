@@ -4,7 +4,7 @@ import datetime
 
 from ..common.exceptions import InvalidParam
 from ..common.log import sys_logger
-from ..common.utils import dt_to_milliseconds
+from ..common.utils import dt_to_milliseconds, parse_time
 
 from .message import Message
 from .context import Context
@@ -141,8 +141,9 @@ class EventSource(object):
     @staticmethod
     def expr_to_time(day, time_expr):
         ctx = Context.get_instance()
-        open_time = ctx.strategy.options.get("market_open_time", config.MARKET_OPEN_TIME)
-        close_time = ctx.strategy.options.get("market_close_time", config.MARKET_CLOSE_TIME)
+        market_period = ctx.strategy.options.get("market_period", config.MARKET_PERIOD)
+        open_time = parse_time(market_period[0][0])
+        close_time = parse_time(market_period[-1][-1])
 
         bases = {
             'open': datetime.datetime.combine(day, open_time),
