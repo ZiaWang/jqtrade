@@ -5,8 +5,6 @@ jqtrade是一个支持用户在本地电脑上运行实盘任务的框架, 它�
 2. 交易和账户管理相关API. 用户可以通过这些API进行实盘下单、撤单、查询资金、持仓等. 
 3. 为用户提供默认的实盘交易接口. 在jqtrade内部, 已经默认实现了对接安信证券one quant DMA交易的接口, 可以直接通过上述API与你的资金账户进行交互. 只需在策略中设置好资金账户和交易接口配置即可.  
 
-
-
 # 快速上手
 ## 安装
 1. 安装python. 需要安装>=3.6.13的python版本, 请参考python官网的安装文档安装python. 
@@ -326,9 +324,194 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
 
 ## 其他策略API
 ### order
+下单API，用户在策略中通过调用此API下单。
+```python
+order(code, amount, style=None, side='long')
+```
+
+参数介绍：
+* code: 股票代码字符串，上交所后缀`XSHG`，深交所后缀`XSHE`，例如："000001.XSHE"、"600000.XSHG"
+* amount: 委托数量，正数表示买入，负数表示卖出，不能为0
+* style: 类似聚宽官网style参数，值类型:
+    * LimitOrderStyle: 限价单，需要指定订单价格。例如: LimitOrderStyle(11.11)
+    * MarketOrderStyle: 市价单，不需要指定订单价格。例如: MarketOrderStyle()
+* side: 买卖方向，支持"long"、"short"两种，目前jqtrade仅支持"long"方向的交易
+
+返回值:
+* 返回jqtrade内部委托id。此id由jqtrade随机生成，用于唯一标识该笔内部订单
+
+示例：
+```python
+# 买入100股000001.XSHE，委托价格11.11元
+order("000001.XSHE", 100, LimitOrderStyle(11.11))
+
+# 卖出100股600000.XSHG，委托价格5元
+order("600000.XSHG", -100, LimitOrderStyle(5))
+```
+
+*注意*:
+* 安信交易接口暂时不支持市价单交易，下单会被废单并提示价格错误。
+
 ### cancel_order
+撤单API，用户在策略中通过调用此API撤单。
+```python
+cancel_order(order_id)
+```
+
+参数介绍：
+* order_id: jqtrade内部委托id。`order`下单时会返回此id，另外get_orders返回的订单对象中，调用对象的`order_id`属性也可以获取订单内部id
+
+返回值: 
+* None
+
+示例:
+```python
+order_id = order("600000.XSHG", -100, LimitOrderStyle(5))
+cancel_order(order_id)
+
+
+for _order in get_orders():
+    if _order.status != "filled":
+        cancel_order(_order.order_id)
+```
+
 ### batch_order
+批量下单API，用户在策略中通过调用此API实现批量下单
+```python
+batch_submit_orders(orders)
+```
+
+参数介绍：
+* orders: list of dict. 每一个dict用于存放单笔订单的信息，每笔订单需要提供：
+  * 必要字段：code, amount
+  * 可选字段：style, side
+  * 这些字段的字段名以及默认值都与`order`函数一致
+  
+返回值:
+* list. 存放内部订单id字符串(同order函数返回值), 如果批量单中某笔订单委托柜台失败，就会返回None
+
+*注意*：
+* 批量单中某笔订单委托失败不会导致所有订单失败
+
+示例：
+```python
+batch_submit_orders([
+  {"code": "000001.XSHE", "amount": 100, "style": LimitOrderStyle(11.11), "side": "long"},
+  {"code": "600000.XSHG", "amount": -100, "style": LimitOrderStyle(5)},
+])
+```
+
 ### batch_cancel_order
+批量撤单API，用户在策略中通过调用此API实现批量撤单
+```python
+batch_cancel_orders(order_ids)
+```
+
+参数介绍：
+* order_ids: list of order_id
+
+返回值：None
+
+示例：
+```python
+batch_cancel_orders(["12345", "67890"])
+```
+
 ### get_orders
+查询订单API，用户在策略中通过调用此API实现订单查询
+```python
+get_orders(order_id=None, code=None, status=None)
+```
+
+参数介绍：
+* get_orders提供了三个过滤参数`order_id`, `code`, `status`，这三个参数可以一起组合使用("与"条件过滤)，不指定时查询所有订单
+* order_id: 内部委托id，查询指定内部id的委托
+* code: 标的代码字符串，查询指定标的的委托
+* status: 订单状态字符串，查询指定状态的委托，status支持：
+  * "new": 新创建的订单，还没有收到柜台委托确认
+  * "open": 订单已收到委托确认
+  * "filling": 订单成交部分，正在撮合中
+  * "filled": 订单全部笔成交
+  * "canceling": 订单撤单处理中
+  * "partly_canceled": 订单部分撤单
+  * "canceled": 订单全部撤单
+  * "rejected": 订单废单
+
+返回值：
+* list. 列表每一个元素对应一个UserOrder对象，每一个UserOrder对象对应一笔委托订单
+
+### UserOrder
+订单对象，存放订单信息，用户可以通过该对象属性获取订单数据。
+
+UserOrder包含以下属性：
+* order_id: 内部订单id
+* code: 股票代码 
+* status: 订单状态，对应以下状态：
+  * "new": 新创建的订单，还没有收到柜台委托确认
+  * "open": 订单已收到委托确认
+  * "filling": 订单成交部分，正在撮合中
+  * "filled": 订单全部笔成交
+  * "canceling": 订单撤单处理中
+  * "partly_canceled": 订单部分撤单
+  * "canceled": 订单全部撤单
+  * "rejected": 订单废单
+* side: 订单方向
+* style: 订单style
+* price: 委托价格
+* amount: 委托数量
+* filled_amount: 成交数量
+* canceled_amount: 撤单数量
+* avg_cost: 成交均价
+* deal_balance: 成交额
+* action: 表示订单时开仓还是平仓，对应：
+    * open：开仓
+    * close：平仓
+* commission: 手续费
+* err_msg: 异常消息
+* create_time: 创建时间
+* entrust_time: 委托确认时间
+
 ### log
+logging.Logger日志对象，用户可以使用此对象打印日志，使用方法与logging模块一致。
+
 ### context
+策略上下文对象，用于一些查询，目前有以下属性供查询：
+* current_dt: 当前真实物理时间，datetime.datetime对象
+* strategy_dt: 当前策略逻辑时间，即当前处理的定时任务对应的时间，datetime.datetime对象
+* portfolio：Portfolio对象，整合了账户模块的一些数据信息供查询。
+
+### portfolio
+Portfolio通过context.portfolio来访问，它用来访问账户模块的一些数据，目前支持：
+* total_assert: 账户总资产，float类型
+* available_cash: 账户可用资金，float类型
+* locked_cash: 账户冻结资金，float类型
+* long_positions: 多头持仓，一个dict，key是标的代码字符串，value是一个UserPosition对象
+* short_positions: 空头持仓，一个dict，key是标的代码字符串，value是一个UserPosition对象
+
+### UserPosition
+持仓对象，封装账户当前的某个持仓信息。
+
+UserPosition包含以下属性：
+* code: 股票代码
+* amount: 持仓数量
+* locked_amount: 冻结持仓数量
+* available_amount: 可用持仓数量
+* avg_cost: 平均成本
+* hold_cost: 持仓成本
+* side: 持仓方向，同订单的方向一样，long表示多头持仓，short表示空头持仓
+* last_price: 最新价格
+* position_value: 最新持仓市值
+
+### sync_balance
+此API用于主动通过交易接口同步资金、持仓到本地。
+jqtrade默认是每隔5秒同步一次最新资金和持仓到本地，如果用户想获取最新的账户资金、持仓信息，可以在策略代码中直接调用此函数
+```python
+sync_balance()
+```
+
+### sync_orders
+此API用于主动通过交易接口同步订单到本地。
+jqtrade默认是每隔5秒同步一次最新订单状态到本地，如果用户想尽快更新内存中订单状态，可以在策略代码中直接调用此函数
+```python
+sync_orders()
+```
