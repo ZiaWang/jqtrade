@@ -45,7 +45,7 @@ email = get_package_info("__email__")
 
 setup(
     name="jqtrade",
-    version=get_version(),
+    version=get_package_info("__version__"),
     description="jqtrade<Simple trading framework on the user's local computer>",
     packages=find_packages(exclude=("tests", "tests.*")),
     author=author,
@@ -72,7 +72,3 @@ setup(
         ],
     },
 )
-
-
-if __name__ == '__main__':
-    print(find_packages(exclude=("tests", "tests.*")))
