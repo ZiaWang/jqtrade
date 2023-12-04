@@ -96,7 +96,7 @@ python -m jqtrade start_task -c strategies/demo_strategy.py -n
 jqtrade start_task -c strategies/demo_strategy.py -n demo
 ```
 
-*注意*:
+**注意**:
 * 实盘策略的名称需要唯一, 不能在同一台机器上启动多个相同名称的实盘任务
 * 策略代码所在目录会自动添加到sys.path, 因此你可以在策略代码中导入你自定义的模块（支持.py和.so模块, 导入.so模块时, 请注意是否与当前python版本匹配）
 
@@ -172,7 +172,7 @@ optional arguments:
 start_task [-h] -n NAME -c CODE [-o OUT] [-e ENV] [--config CONFIG] [--debug]
 ```
 start_task用于启动策略进程, 该子命令选项如下：
-* 必须提供:
+* **必须提供**:
     * -n NAME, --name NAME: 实盘任务名称, 唯一标识该实盘任务, 同一台机器不能重复
     * -c CODE, --code CODE: 策略代码路径
 * 可选项:
@@ -186,7 +186,7 @@ start_task用于启动策略进程, 该子命令选项如下：
 jqtrade start_task -c strategies/demo.py -n demo -o demo.log -e 'PYTHONPATH=/home/server/strategy_utils'
 ```
 
-*注意：`-e` 指定的环境变量，对于PYTHONPATH，jqtrade会将指定的路径信息insert到sys.path中*
+**注意：`-e` 指定的环境变量，对于PYTHONPATH，jqtrade会将指定的路径信息insert到sys.path中**
 
 ### stop_task
 ```bash
@@ -200,7 +200,7 @@ stop_task用于停止运行中的策略进程，该子命令选项如下：
 * 可选项:
     * -s {SIGTERM,SIGKILL}, --signal {SIGTERM,SIGKILL}: 停止策略进程时使用的信号，默认SIGTERM，希望强制退出时请使用SIGKILL。
 
-*注意*:
+**注意**:
 * 如果你的策略进程没有后台运行，而是在当前终端对话框中正在运行的，可以直接使用`ctrl + c` 来快速停止策略。jqtrade内部会监听`ctrl + c`发送的信号，然后安全的停止当前策略进程
 * 关于停止策略进程的时间:
     * 使用stop_task默认`SIGTERM`选项或`ctrl + c`来停止策略进程时，策略进程会在处理完当前的事务之后，再执行信号处理。
@@ -212,7 +212,7 @@ get_tasks [-h]
 ```
 get_tasks用于查询当前机器上所有运行中的策略进程，并打印策略进程的启动参数和进程信息。
 
-*注意*:
+**注意**:
 * 用户使用`stop`停止策略进程命令前，可以通过`get_tasks`命令查询当前运行中的策略进程，根据策略进程的任务名称或pid来停止对应的策略进程
 
 
@@ -245,7 +245,7 @@ def func(context):
     pass
 ```
 
-*注意*:
+**注意**:
 * process_initialize会在策略进程启动时先执行，因此，用户自己额外的一些初始化操作可以放到process_initialize中
 
 ### run_daily
@@ -257,7 +257,7 @@ def func(context):
     * close: 等价于`15:00:00`, jqtrade默认收盘时间是15:00:00
     * every_minute: 等价于交易时间段每分钟执行(09:30:00~11:30:00, 13:00:00~15:00:00)
 
-*注意*:
+**注意**:
 * `run_daily`只能在`process_initialize`中调用，在其他地方调用会报错。
 
 ### set_options
@@ -286,7 +286,7 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
 * `安信DMA交易接口(AnXinDMATradeGate)`专用选项:
   * `account_no`: 资金账号
     * 选项值类型：str
-    * *必须提供*
+    * **必须提供**
   * `order_dir`: 安信DMA交易接口文件单路径
     * 选项值类型：str
     * 默认值：C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法
@@ -332,7 +332,7 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
     * 示例：`[("09:30:00", "11:30:00""), ("13:00:00", "15:00:00")]`
 
 
-注意：
+**注意**：
 * 账户管理模块的选项和交易接口选项区分开，是因为前者是固定不变的，后者如果用户自己开发交易接口的话，就可以自定义交易接口选项。
 * 用户自己开发的交易接口，在setup函数中可以通过options参数获取所有策略中传递的选项
 
@@ -364,7 +364,7 @@ order("000001.XSHE", 100, LimitOrderStyle(11.11))
 order("600000.XSHG", -100, LimitOrderStyle(5))
 ```
 
-*注意*:
+**注意**:
 * 安信交易接口暂时不支持市价单交易，下单会被废单并提示价格错误。
 
 ### cancel_order
@@ -398,14 +398,14 @@ batch_submit_orders(orders)
 
 参数介绍：
 * orders: list of dict. 每一个dict用于存放单笔订单的信息，每笔订单需要提供：
-  * 必要字段：code, amount
+  * **必要字段**：code, amount
   * 可选字段：style, side
   * 这些字段的字段名以及默认值都与`order`函数一致
   
 返回值:
 * list. 存放内部订单id字符串(同order函数返回值), 如果批量单中某笔订单委托柜台失败，就会返回None
 
-*注意*：
+**注意**：
 * 批量单中某笔订单委托失败不会导致所有订单失败
 
 示例：
