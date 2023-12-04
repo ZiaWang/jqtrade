@@ -8,11 +8,11 @@ jqtrade是一个支持用户在本地电脑上运行实盘任务的框架, 它�
 # 快速上手
 ## 安装
 1. 安装python. 需要安装>=3.6.13的python版本, 请参考python官网的安装文档安装python. 
-2. 安装jqtrade. 可以直接使用`pip`来安装jqtrade【TODO: 需上传到pypi】
+2. 安装jqtrade. 可以直接使用`pip`来安装jqtrade【TODO: 上传到pypi】
 ```bash
 pip install jqtrade
 ```
-3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：【TODO: 待补充】. 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
+3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：[安信one quant DMA交易申请步骤](#安信one quant DMA交易申请步骤). 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
 
 ## 策略代码
 完成上述安装步骤之后, 就可以开始实现策略代码了, 下面是一个策略代码的示例：
@@ -28,6 +28,7 @@ def process_initialize(context):
     
     run_daily(before_market_open, "open-30m")
     run_daily(market_open, "open")
+    run_daily(market_1000, "10:00:00")
     run_daily(market_close, "close")
     run_daily(after_market_close, "close+30m")
     run_daily(do_order, "every_minute")
@@ -49,7 +50,11 @@ def before_market_open(context):
     
 def market_open(context):
     log.info("market_open run")
+
     
+def market_1000(context):
+    log.info("market_1000 run")
+
     
 def do_order(context):
     log.info("do_order run")
@@ -76,7 +81,7 @@ def after_market_close(context):
     log.info("after_market_close run")
 ```
 
-策略代码中提供了基本下单、撤单、查询资金、持仓、订单的API接口, 关于这些API的详细使用, 见下面：【TODO: 待补充】
+策略代码中提供了基本下单、撤单、查询资金、持仓、订单的API接口, 关于这些API的详细使用, 见下面：[策略框架](#策略框架)
 
 ## 启动策略
 使用jqtrade提供的`start_task`命令可以很方便的快速启动实盘策略. 
@@ -119,7 +124,7 @@ python -m jqtrade stop_task -n demo
 jqtrade stop_task -n demo
 ```
 
-start_task、stop_task除了上述示例中的常用参数之外, 还有其他更详细的命令介绍, 见：【】
+start_task、stop_task除了上述示例中的常用参数之外, 还有其他更详细的命令介绍, 见：[命令参考](#命令参考)
 
 # 使用说明
 ## 命令参考
@@ -201,6 +206,16 @@ stop_task用于停止运行中的策略进程，该子命令选项如下：
     * 使用stop_task默认`SIGTERM`选项或`ctrl + c`来停止策略进程时，策略进程会在处理完当前的事务之后，再执行信号处理。
     * 使用`stop_task -s SIGKILL`时，策略进程会被系统直接杀掉，不管当前是否正在处理事务
 
+### get_tasks
+```bash
+get_tasks [-h]
+```
+get_tasks用于查询当前机器上所有运行中的策略进程，并打印策略进程的启动参数和进程信息。
+
+*注意*:
+* 用户使用`stop`停止策略进程命令前，可以通过`get_tasks`命令查询当前运行中的策略进程，根据策略进程的任务名称或pid来停止对应的策略进程
+
+
 ## 策略框架
 策略框架分成两部分：策略调度模块(scheduler)、账户管理模块(account)
 * scheduler模块实现策略代码的调度逻辑，用于驱动用户策略代码根据实际物理时间来运转
@@ -208,11 +223,11 @@ stop_task用于停止运行中的策略进程，该子命令选项如下：
 
 对于策略任务调度，用户只需要实现`process_initialize`函数，在该函数中调用jqtrade提供的`run_daily`函数设置自己的定时任务，在策略进程启动后，就会根据用户设置的时间来驱动用户定时任务函数的执行。
 
-对于账户管理，用户只需要在策略代码的`process_initialize`函数中，调用`set_options`来设置一些必要初始化参数即可，有关`set_options`所支持的选项和用法，见：【TODO: 待补充】
+对于账户管理，用户只需要在策略代码的`process_initialize`函数中，调用`set_options`来设置一些必要初始化参数即可，有关`set_options`所支持的选项和用法，见：[set_options](#set_options)
 
 ### process_initialize
 `process_initialize(context)`函数是用户需要在策略代码中自己定义并实现的一个函数，并且该函数要有一个参数`context`，在该函数中，用户需要设置交易接口所需的必要参数、定时任务。
-`context`参数是jqtrade提供给用户的一个API对象，它具有一些属性方便用户来查询数据，详情见下面的介绍：【TODO: 待补充】
+`context`参数是jqtrade提供给用户的一个API对象，它具有一些属性方便用户来查询数据，详情见下面的介绍：[context](#context)
 
 示例:
 ```python
@@ -249,7 +264,7 @@ def func(context):
 `set_options(**kwargs)`用于给策略进程传递策略选项，从而控制策略进程中的一些行为。
 set_options支持的选项分成两类，一类是策略调度模块选项(scheduler)，另一类是账户管理模块选项(account)。
 * 策略调度模块选项是针对策略调度逻辑的，用来控制策略框架的一些调度行为
-* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，用户只需联系安信证券相关客户经理【TODO：待补充安信链接】，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
+* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，参考下方[安信one quant DMA交易申请步骤](#安信one quant DMA交易申请步骤)申请开通one quant，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
   * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
 
 策略调度模块支持的选项:
@@ -515,3 +530,7 @@ jqtrade默认是每隔5秒同步一次最新订单状态到本地，如果用户
 ```python
 sync_orders()
 ```
+
+# 安信one quant DMA交易申请步骤
+扫描下方二维码联系安信相关工作人员申请即可：
+【TODO：二维码】
