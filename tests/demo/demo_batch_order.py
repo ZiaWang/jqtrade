@@ -31,16 +31,30 @@ def do_order(context):
     log.info("do_order run.")
 
     log.info("pos before trade: %s" % (context.portfolio.long_positions["000001.XSHE"]))
-    order_id = order("000550.XSHE", 1000, LimitOrderStyle(19.00))
-    log.info("用户下单，order id：%s" % order_id)
-    log.info("pos after trade: %s" % (context.portfolio.long_positions["000001.XSHE"]))
 
-    g["order_id"] = order_id
+    order_ids = batch_submit_orders([
+        {
+            "code": "000550.XSHE",
+            "amount": 1000,
+            "style": LimitOrderStyle(19.00),
+        },
+        {
+            "code": "600081.XSHG",
+            "amount": -1000,
+            "style": LimitOrderStyle(12.00),
+        }
+    ])
+
+    log.info("用户下单，order id：%s" % order_ids)
+    log.info("pos after trade: %s" % (context.portfolio.long_positions["000550.XSHE"]))
+    log.info("pos after trade: %s" % (context.portfolio.long_positions["600081.XSHG"]))
+
+    g["order_ids"] = order_ids
 
 
 def do_cancel(context):
     log.info("cancel_order run.")
-    cancel_order(g["order_id"])
+    batch_cancel_orders(g["order_ids"])
 
 
 def check_orders(context):
