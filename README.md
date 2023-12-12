@@ -89,7 +89,7 @@ def after_market_close(context):
 示例：
 ```bash
 # 启动一个策略名称为'demo'的实盘策略, 策略代码路径是'strategies/demo_strategy.py'
-python -m jqtrade start_task -c strategies/demo_strategy.py -n
+python -m jqtrade start_task -c strategies/demo_strategy.py -n demo
 ```
 或
 ```bash
