@@ -41,7 +41,7 @@ g = {}
 def before_market_open(context):
     log.info("before_market_open run")
 
-    log.info(f"当前总资产： {context.portfolio.total_assert}")
+    log.info(f"当前总资产： {context.portfolio.total_value}")
     log.info(f"当前锁定金额：{context.portfolio.locked_cash}")
     log.info(f"当前可用资金：{context.portfolio.available_cash}")
     log.info(f"当前多头持仓：{context.portfolio.long_positions}")
@@ -60,8 +60,8 @@ def do_order(context):
     log.info("do_order run")
 
     pos = context.portfolio.long_positions["000001.XSHE"]
-    if pos.available_amount > 0:
-        g["order_id_000001"] = order("000001.XSHE", -pos.available_amount, LimitOrderStyle(10))
+    if pos.closeable_amount > 0:
+        g["order_id_000001"] = order("000001.XSHE", -pos.closeable_amount, LimitOrderStyle(10))
     
     if "000002.XSHE" not in context.portfolio.long_positions:
         g["order_id_000002"] = order("000002.XSHE", 100, MarketOrderStyle())
@@ -505,10 +505,11 @@ logging.Logger日志对象，用户可以使用此对象打印日志，使用方
 
 ### portfolio
 Portfolio通过context.portfolio来访问，它用来访问账户模块的一些数据，目前支持：
-* total_assert: 账户总资产，float类型
+* total_value: 账户总资产，float类型
 * available_cash: 账户可用资金，float类型
 * locked_cash: 账户冻结资金，float类型
 * long_positions: 多头持仓，一个dict，key是标的代码字符串，value是一个UserPosition对象
+* positions: 同"long_positions"，为了方便兼容聚宽策略保留的属性
 * short_positions: 空头持仓，一个dict，key是标的代码字符串，value是一个UserPosition对象
 
 ### UserPosition
@@ -516,14 +517,16 @@ Portfolio通过context.portfolio来访问，它用来访问账户模块的一些
 
 UserPosition包含以下属性：
 * code: 股票代码
-* amount: 持仓数量
+* total_amount: 持仓数量
 * locked_amount: 冻结持仓数量
-* available_amount: 可用持仓数量
+* closeable_amount: 可用持仓数量
 * avg_cost: 平均成本
-* hold_cost: 持仓成本
+* acc_avg_cost: 同"avg_cost"，为了方便兼容聚宽策略保留的属性
 * side: 持仓方向，同订单的方向一样，long表示多头持仓，short表示空头持仓
 * last_price: 最新价格
+* price: 同"last_price"，为了方便兼容聚宽策略保留的属性
 * position_value: 最新持仓市值
+* value: 同"position_value"，为了方便兼容聚宽策略保留的属性
 
 ### sync_balance
 此API用于主动通过交易接口同步资金、持仓到本地。
