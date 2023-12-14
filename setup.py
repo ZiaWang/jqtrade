@@ -60,7 +60,7 @@ setup(
     install_requires=get_install_requires(),
     zip_safe=False,
     platforms=["all"],
-    python_requires=">=3.6.13",
+    python_requires=">=3.6.2, <=3.9.13",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: Microsoft :: Windows",

@@ -10,7 +10,7 @@ from ..common.utils import parse_time
 
 from .event_source import EventSource
 from .event import create_event_class, EventPriority
-from .api import UserContext
+from .api import UserContext, strategy_print
 from .config import get_config
 
 config = get_config()
@@ -82,6 +82,7 @@ class Strategy(object):
         self._user_module.log = user_logger
         self._user_module.context = self._user_ctx
         self._user_module.set_options = self.set_options
+        self._user_module.print = strategy_print
 
         # account模块相关API
         if config.SETUP_ACCOUNT:

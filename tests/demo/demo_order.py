@@ -18,21 +18,18 @@ def process_initialize(context):
     log.info("short_positions length： %s" % len(context.portfolio.short_positions))
 
     run_daily(cancel_open_orders, (datetime.datetime.now() + datetime.timedelta(seconds=1)).strftime("%H:%M:%S"))
-    # run_daily(do_order, (datetime.datetime.now() + datetime.timedelta(seconds=5)).strftime("%H:%M:%S"))
-    # run_daily(do_cancel, (datetime.datetime.now() + datetime.timedelta(seconds=15)).strftime("%H:%M:%S"))
-
+    run_daily(do_order, (datetime.datetime.now() + datetime.timedelta(seconds=5)).strftime("%H:%M:%S"))
+    run_daily(do_cancel, (datetime.datetime.now() + datetime.timedelta(seconds=15)).strftime("%H:%M:%S"))
     run_daily(check_orders, (datetime.datetime.now() + datetime.timedelta(seconds=20)).strftime("%H:%M:%S"))
-
     run_daily(check_sync_balance, (datetime.datetime.now() + datetime.timedelta(seconds=25)).strftime("%H:%M:%S"))
     run_daily(check_sync_orders, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
-
-    # run_daily(report_order_status, "every_minute")
+    run_daily(report_order_status, "every_minute")
 
 
 g = {
     # "code": "601988.XSHG",
     "code": "511880.XSHG",
-    "price": 101.730,
+    "price": 101.770,
     "amount": -100,
 }
 
@@ -55,7 +52,7 @@ def do_cancel(context):
 
 def check_orders(context):
     log.info("check_orders run.")
-    for _order in get_orders():
+    for _order in get_orders().values():
         log.info(f"get_order：{_order._UserOrder__order.__dict__}")
 
     log.info(f"pos: {context.portfolio.long_positions.get(g['code'])}")
@@ -84,7 +81,7 @@ def check_sync_orders(context):
     log.info("check_sync_orders run.")
     sync_orders()
 
-    for _order in get_orders():
+    for _order in get_orders().values():
         log.info(f"UserOrder: {_order}")
 
 
@@ -92,11 +89,11 @@ def report_order_status(context):
     log.info("report_order_status run.")
 
     if "order_id" in g:
-        log.info(get_orders(order_id=g["order_id"])[0]._UserOrder__order.__dict__)
+        log.info(list(get_orders(order_id=g["order_id"]).values())[0]._UserOrder__order.__dict__)
 
 
 def cancel_open_orders(context):
     log.info("cancel_open_orders run.")
-    for _order in get_orders():
+    for _order in get_orders().values():
         if _order.status in ("new", "open"):
             cancel_order(_order.order_id)

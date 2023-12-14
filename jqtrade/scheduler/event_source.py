@@ -102,12 +102,13 @@ class EventSource(object):
         if len(self._events):
             return
 
-        if len(self._events) == 0:
+        while len(self._events) == 0:
             if len(self._days) == 0:
                 self._days = self._get_days()
 
             day = self._days.pop(0)
             self.add_daily_events(day)
+
         self._events.sort(key=lambda e: e[0])
 
     def add_daily_events(self, day):

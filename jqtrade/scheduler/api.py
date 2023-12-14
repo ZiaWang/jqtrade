@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from .context import Context
 
 
 class UserContext(object):
@@ -24,3 +25,16 @@ class UserContext(object):
     def portfolio(self):
         """ 账户信息对象，通过此对象访问账户持仓、资金信息 """
         return self.__ctx.portfolio
+
+
+def strategy_print(*args, **kwargs):
+    ctx = Context.get_instance()
+
+    kwargs.setdefault("flush", True)
+
+    if ctx.out and "file" not in kwargs:
+        with open(ctx.out, "a") as wf:
+            kwargs["file"] = wf
+            print(*args, **kwargs)
+    else:
+        print(*args, **kwargs)

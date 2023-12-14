@@ -4,6 +4,7 @@ from ..common.log import sys_logger
 from ..scheduler.context import Context
 
 from .order import OrderSide, OrderStatus, OrderStyle, MarketOrderStyle, LimitOrderStyle
+from .position import Position
 
 
 logger = sys_logger.getChild("account.api")
@@ -86,7 +87,7 @@ def get_orders(order_id=None, code=None, status=None):
     Args:
         order_id: 内部委托id，查询指定内部id的委托
         code: 标的代码字符串，查询指定标的的委托
-        status: 订单状态字符串，查询指定状态的委托
+        status: 订单状态字符串或OrderStatus类型值，查询指定状态的委托
             status支持：new、open、filling、filled、canceling、partly_canceled、canceled、rejected
 
     Return:
@@ -99,7 +100,10 @@ def get_orders(order_id=None, code=None, status=None):
         _check_code(code)
 
     if status:
-        _check_status(status)
+        if isinstance(status, OrderStatus):
+            status = status.value
+        else:
+            _check_status(status)
 
     acc_orders = Context.get_instance().account.orders
 
@@ -114,7 +118,7 @@ def get_orders(order_id=None, code=None, status=None):
     if status:
         orders = [o for o in orders if o.status.value == status]
 
-    return [UserOrder(_order) for _order in orders]
+    return {_order.order_id: UserOrder(_order) for _order in orders}
 
 
 def batch_submit_orders(orders):
@@ -198,7 +202,7 @@ class UserOrder(object):
         return self.__order.style
 
     @property
-    def price(self):
+    def order_price(self):
         return self.__order.price
 
     @property
@@ -210,7 +214,7 @@ class UserOrder(object):
         return self.__order.filled_amount
 
     @property
-    def avg_cost(self):
+    def avg_price(self):
         return self.__order.avg_cost
 
     @property
@@ -248,13 +252,27 @@ class UserOrder(object):
     def __str__(self):
         return f"UserOrder(order_id={self.order_id}, code={self.code}, amount={self.amount}, " \
                f"style={self.style}), status={self.status}, action={self.action}, side={self.side}, " \
-               f"filled_amount={self.filled_amount}, avg_cost={self.avg_cost}, deal_balance={self.deal_balance}, " \
+               f"filled_amount={self.filled_amount}, avg_price={self.avg_price}, deal_balance={self.deal_balance}, " \
                f"canceled_amount={self.canceled_amount}, create_time={self.create_time}"
+
+
+class UserPositionDict(dict):
+    def __getitem__(self, code):
+        try:
+            return dict.__getitem__(self, code)
+        except KeyError:
+            sys_logger.warn(f"{code} 在 positions 中不存在，我们返回空的 Position 对象, "
+                            f"total_amount/closeable_amount/avg_cost/acc_avg_cost 都是 0")
+            return UserPosition.get_empty_pos(code)
 
 
 class UserPosition(object):
     def __init__(self, sys_position):
         self.__position = sys_position
+
+    @classmethod
+    def get_empty_pos(cls, code):
+        return UserPosition(Position(code, 0, 0, 0, None))
 
     @property
     def security(self):
@@ -263,10 +281,6 @@ class UserPosition(object):
     @property
     def total_amount(self):
         return self.__position.amount
-
-    @property
-    def locked_amount(self):
-        return self.__position.locked_amount
 
     @property
     def closeable_amount(self):
@@ -280,7 +294,8 @@ class UserPosition(object):
 
     @property
     def side(self):
-        return self.__position.side.value
+        if self.__position.side:
+            return self.__position.side.value
 
     @property
     def last_price(self):
@@ -296,9 +311,8 @@ class UserPosition(object):
 
     def __str__(self):
         return f"UserPosition(security={self.security}, total_amount={self.total_amount}, " \
-               f"locked_amount={self.locked_amount}, closeable_amount={self.closeable_amount}, " \
-               f"avg_cost={self.avg_cost}, side={self.side}, last_price={self.last_price}, " \
-               f"position_value={self.position_value})"
+               f"closeable_amount={self.closeable_amount}, avg_cost={self.avg_cost}, side={self.side}, " \
+               f"last_price={self.last_price}, position_value={self.position_value})"
 
 
 __all__ = [

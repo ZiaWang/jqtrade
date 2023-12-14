@@ -12,7 +12,7 @@ class Context(object):
 
     _instance = None
 
-    def __init__(self, task_name, event_bus, loop, scheduler, loader, debug, config, start=None, end=None):
+    def __init__(self, task_name, event_bus, loop, scheduler, loader, debug, config, out, start=None, end=None):
         self._task_name = task_name
         self._event_bus = event_bus
         self._event_loop = loop
@@ -20,6 +20,7 @@ class Context(object):
         self._loader = loader
         self._debug = debug
         self._config = config
+        self._out = out
 
         self._start = start or datetime.datetime.now()
         self._end = end
@@ -139,3 +140,7 @@ class Context(object):
     @use_account.setter
     def use_account(self, val):
         self._use_account = val
+
+    @property
+    def out(self):
+        return self._out

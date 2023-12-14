@@ -85,7 +85,8 @@ class TaskRunner(object):
                           scheduler=EventSourceScheduler(),
                           loader=Loader(self._code_file),
                           debug=self._debug,
-                          config=self._config)
+                          config=self._config,
+                          out=self._out_file)
 
         strategy = Strategy(context)
         strategy.setup()

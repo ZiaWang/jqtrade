@@ -232,6 +232,9 @@ class AnXinDMATradeGate(AbsTradeGate):
 
         self._ignore_error_line = None
 
+        self._counter_type = None
+        self._algo_type = None
+
     def order(self, sys_order):
         acct_no = self._options.get("account_no")
         if not acct_no:
@@ -241,16 +244,12 @@ class AnXinDMATradeGate(AbsTradeGate):
         if account_type != self.DEFAULT_ACCOUNT_TYPE:
             raise InvalidParam(f"当前版本仅支持{self.DEFAULT_ACCOUNT_TYPE}类型账户交易")
 
-        counter_type = self._options.get("counter_type", self.DEFAULT_COUNTER_TYPE)
-        if counter_type != self.DEFAULT_COUNTER_TYPE:
-            logger.warn(f"检测到当前使用的柜台账户类型是{counter_type}, 请与您的客户经理确认是否开通了此柜台账户类型，否则将影响交易")
-
         if sys_order.side != OrderSide.long:
             raise InvalidParam("当前版本仅支持做多")
 
         now = datetime.datetime.now()
         order_info = [now.strftime("%H%M%S.%f"), sys_order.order_id,
-                      counter_type, acct_no,
+                      self._counter_type, acct_no,
                       self._encode_security(sys_order.code)]
 
         if sys_order.action == OrderAction.open:
@@ -258,12 +257,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         else:
             order_info.append(self.TRADE_SIDES["S"])
 
-        order_info.append(abs(sys_order.amount))
-
-        algo_type = self._options.get("algo_type", self.DEFAULT_ALGO_TYPE)
-        if algo_type != self.DEFAULT_ALGO_TYPE:
-            logger.warn(f"检测到当前使用的算法交易类型是{algo_type}, 请与您的客户经理确认是否开通了此算法交易类型，否则将影响交易")
-        order_info.append(algo_type)
+        order_info.extend([abs(sys_order.amount), self._algo_type])
 
         if isinstance(sys_order.style, MarketOrderStyle):
             if sys_order.action == OrderAction.open:
@@ -349,11 +343,11 @@ class AnXinDMATradeGate(AbsTradeGate):
                 "code": self._decode_security(str(_pos.symbol)),
                 "amount": int(_pos.currentQty),
                 "available_amount": int(_pos.enabledQty),
-                "avg_cost": float(_pos.costPrice),
+                "avg_cost": round(float(_pos.costPrice), 3),
 
                 "side": OrderSide.long,
-                "last_price": float(_pos.lastPrice),
-                "position_value": float(_pos.mktValue),
+                "last_price": round(float(_pos.lastPrice), 3),
+                "position_value": round(float(_pos.mktValue), 3),
             })
 
         return data
@@ -486,10 +480,10 @@ class AnXinDMATradeGate(AbsTradeGate):
         order["entrust_time"] = datetime.datetime.strptime(order_line.orderDate + order_line.orderTime,
                                                            "%Y%m%d%H%M%S").strftime("%Y-%m-%d %H:%M:%S.%f")
         order["confirm_id"] = order_line.orderNo
-        order["filled_amount"] = order_line.filledQty
-        order["deal_balance"] = order_line.filledAmt
-        order["canceled_amount"] = order_line.cancelQty
-        order["avg_cost"] = order_line.avgPrice
+        order["filled_amount"] = int(order_line.filledQty)
+        order["deal_balance"] = round(float(order_line.filledAmt), 3)
+        order["canceled_amount"] = int(order_line.cancelQty)
+        order["avg_cost"] = round(float(order_line.avgPrice), 3)
         order["err_msg"] = order_line.text
 
     def _save_orders(self):
@@ -526,6 +520,14 @@ class AnXinDMATradeGate(AbsTradeGate):
         logger.info(f"安信one quant文件单路径: {self._order_dir}")
         if not os.path.exists(self._order_dir):
             raise FileNotFoundError(f"文件单目录不存在（{self._order_dir}），请检查是否已开启安信one quant并打开文件单导出选项")
+
+        self._counter_type = self._options.get("counter_type", self.DEFAULT_COUNTER_TYPE)
+        if self._counter_type != self.DEFAULT_COUNTER_TYPE:
+            logger.warn(f"检测到当前使用的柜台账户类型是{self._counter_type}, 请与您的客户经理确认是否开通了此柜台账户类型，否则将影响交易")
+
+        self._algo_type = self._options.get("algo_type", self.DEFAULT_ALGO_TYPE)
+        if self._algo_type != self.DEFAULT_ALGO_TYPE:
+            logger.warn(f"检测到当前使用的算法交易类型是{self._algo_type}, 请与您的客户经理确认是否开通了此算法交易类型，否则将影响交易")
 
         ctx = Context.get_instance()
         runtime_dir = options.get("runtime_dir", scheduler_config.RUNTIME_DIR)

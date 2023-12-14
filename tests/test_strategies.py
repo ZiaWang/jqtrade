@@ -1,12 +1,13 @@
 # -*- coding:utf-8 -*-
 import os
+import sys
 import datetime
 
 from importlib import import_module
 
 from jqtrade.scheduler.config import get_config as get_scheduler_config
 from jqtrade.account.trade_gate import AbsTradeGate
-from jqtrade.scheduler.log import set_log_context, sys_logger
+from jqtrade.common.log import set_log_context, sys_logger
 
 scheduler_config = get_scheduler_config()
 scheduler_config.ENABLE_HISTORY_START = True
@@ -17,7 +18,7 @@ logger = sys_logger.getChild("test_strategy")
 
 def get_setting(path, setting):
     import re
-    c = open(path).read()
+    c = open(path, encoding=sys.getdefaultencoding()).read()
     has_setting = re.search(r'^' + setting, c, flags=re.M) is not None
     g = re.search(r'^%s\s*=(.*?^[\}\]])' % setting, c, flags=re.M | re.S)
     assert bool(g) == has_setting
@@ -41,8 +42,9 @@ def parse_dt(dt):
 
 
 class FakeTradeGate(AbsTradeGate):
-    def setup(self):
+    def setup(self, options):
         logger.info("setup")
+        super(FakeTradeGate, self).setup(options)
 
     def order(self, req):
         logger.info("order. req=%s" % req)
@@ -137,9 +139,11 @@ def run_strategy(path):
                       loader=Loader(path),
                       debug=options.get("debug", False),
                       start=start,
-                      end=end)
+                      end=end,
+                      task_name=options.get("task_name", "test_task"),
+                      config=None)
 
-    if scheduler_config.SETUP_ACCOUNT:
+    if options.get("use_account"):
         from jqtrade.account.account import Account
         from jqtrade.account.portfolio import Portfolio
 
@@ -147,7 +151,7 @@ def run_strategy(path):
 
         account = Account(context)
         context.account = account
-        account.setup()
+        account.setup({})       # TODO options
 
         portfolio = Portfolio(account)
         context.portfolio = portfolio

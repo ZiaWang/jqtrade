@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .api import UserPosition
+from .api import UserPosition, UserPositionDict
 
 
 class Portfolio(object):
@@ -10,7 +10,7 @@ class Portfolio(object):
 
     @property
     def long_positions(self):
-        positions = {}
+        positions = UserPositionDict()
         for _code, _pos in self.__account.long_positions.items():
             positions[_code] = UserPosition(_pos)
         return positions
@@ -19,7 +19,7 @@ class Portfolio(object):
 
     @property
     def short_positions(self):
-        positions = {}
+        positions = UserPositionDict()
         for _code, _pos in self.__account.short_positions.items():
             positions[_code] = UserPosition(_pos)
         return positions
