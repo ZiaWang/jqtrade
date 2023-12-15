@@ -19,6 +19,8 @@ pip install git+https://gitee.com/wow_zihao/jqtrade.git
 pip install git+https://github.com/ZiaWang/jqtrade.git
 ```
 
+注意：windows系统安装时，可能会遇到安装`pyuv`库的报错，可以参考下面[pyuv安装问题](#pyuv安装问题)解决
+
 3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：[安信one quant DMA交易申请步骤](#安信one quant DMA交易申请步骤). 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
 
 ## 策略代码
@@ -599,7 +601,7 @@ sync_orders()
 详细见下面介绍。
 
 ## 1. 开户
-![kaihu.png](static/kaihu.png)
+![kaihu.png](static/imgs/kaihu.png)
 
 1. 手机扫描上方二维码或点击链接：https://sjkh.essence.com.cn/h5kh/index.htm?qd=jka0007395&branch=8803&pt=crm
 2. 点击“新开户申请”，填写手机号并勾选《安信证券用户服务协议》,获取验证码后点击“马上开户”
@@ -616,7 +618,7 @@ OneQuant股票交易佣金费率：万2.5
 
 梁亚雨 0755-23608637
 
-![kefu_wx](static/kefu.png)
+![kefu_wx](static/imgs/kefu.png)
 
 ## 3. 安装OneQuant
 开通完OneQuant之后，客服会发一个OneQuant的安装包，可以根据安装引导进行安装。
@@ -626,18 +628,18 @@ OneQuant股票交易佣金费率：万2.5
 ## 4. 登录与使用
 1. 使用客服提供的账号和密码登入OneQuant
 
-![login.png](static/login.png)
+![login.png](static/imgs/login.png)
 
 2. 点击【我的】【资产全景】，进入资产页面，再点击账户中列出的资金账户，并登陆资金账户
 
-![asset.png](static/asset.png)
+![asset.png](static/imgs/asset.png)
    
 3. 登录完资金账号之后，点击【策略】【DMA算法】，进入DMA算法界面
 
-![strategy.png](static/strategy.png)
+![strategy.png](static/imgs/strategy.png)
 
 4. 点击【启动】后会进入算法单的启动前设置页面，我们可以设置算法单的文件目录（一般不需要修改，使用默认路径即可），然后再点击最下面的启动，即可启动DMA程序。
-![dma.png](static/dma.png)
+![dma.png](static/imgs/dma.png)
 
 5. 启动DMA算法之后，我们就可以使用jqtrade启动我们的策略了，需要注意算法单文件目录路径是否与jqtrade默认的文件单路径一样，如果不一样的话，需要在策略中使用set_options设置`order_dir`选项
 ```python
@@ -647,3 +649,16 @@ set_options(
     file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 ```
+
+# 常见问题
+## pyuv安装问题
+jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需要使用到c++的一些运行时组件，如果电脑上没有安装c++运行时组件，就会安装报错。
+报错提示示例：`error: Microsoft Visual c++ 14.0 or greater is required. Get it with ... `
+
+有两种解决方法：
+1. 根据报错提示，到微软官网，安装`Visual c++ 14.0`，然后再安装pyuv
+2. 使用现成编译好的pyuv whl文件来直接安装pyuv，比较方便。目前pyuv官网只提供了python3.6以下版本的whl文件，jqtrade为了方便用户安装，也编译好了现成的whl文件，点击下载安装即可：
+  * python3.6 whl文件：https://pypi.org/project/pyuv/#files
+  * python3.7 whl文件：[pyuv-1.4.0-cp37-cp37m-win_amd64.whl](static/whls/pyuv-1.4.0-cp37-cp37m-win_amd64.whl)
+  * python3.8 whl文件：[pyuv-1.4.0-cp38-cp38-win_amd64.whl](static/whls/pyuv-1.4.0-cp38-cp38-win_amd64.whl)
+  * python3.9 whl文件：[pyuv-1.4.0-cp39-cp39-win_amd64.whl](static/whls/pyuv-1.4.0-cp39-cp39-win_amd64.whl)
