@@ -257,13 +257,18 @@ class UserOrder(object):
 
 
 class UserPositionDict(dict):
+    
+    def __init__(self, side, *args, **kwargs):
+        super(UserPositionDict, self).__init__(*args, **kwargs)
+        self._side = side
+    
     def __getitem__(self, code):
         try:
             return dict.__getitem__(self, code)
         except KeyError:
             sys_logger.warn(f"{code} 在 positions 中不存在，我们返回空的 Position 对象, "
-                            f"total_amount/closeable_amount/avg_cost/acc_avg_cost 都是 0")
-            return UserPosition.get_empty_pos(code)
+                            f"total_amount/closeable_amount/avg_cost/acc_avg_cost/position_value/last_price 都是 0")
+            return UserPosition.get_empty_pos(code, side=self._side)
 
 
 class UserPosition(object):
@@ -271,8 +276,8 @@ class UserPosition(object):
         self.__position = sys_position
 
     @classmethod
-    def get_empty_pos(cls, code):
-        return UserPosition(Position(code, 0, 0, 0, None))
+    def get_empty_pos(cls, code, side):
+        return UserPosition(Position(code, 0, 0, 0, side, position_value=0, last_price=0))
 
     @property
     def security(self):

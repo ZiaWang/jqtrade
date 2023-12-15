@@ -30,6 +30,7 @@ def process_initialize(context):
     set_options(
         account_no="1234567",           # 资金账号
         # order_dir = "D:\\交易软件\\安信OneQuant\\csvTemplate\\DMA算法\\",      # 安信one quant DMA算法文件单目录路径
+        # file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定
     )
     
     run_daily(before_market_open, "open-30m")
@@ -279,7 +280,8 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
 
 set_options(
     account_no="12345",         # 策略交易使用的资金账号
-    order_dir="E:\Apps\安信OneQuant\AxOneQuant\csvTemplate\DMA算法"         # 安信one quant DMA交易文件单路径
+    order_dir="E:\Apps\安信OneQuant\AxOneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
+    file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 
 ```
@@ -308,6 +310,9 @@ set_options(
     * 选项值类型：str
     * 默认值：C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法
     * 注意：当在安信one quant上启动该DMA交易之后，请确认设置的导出文件目录与此默认值是否一致，若不一致，请在set_options中设置实际路径
+  * `file_encoding`: 安信文件单的文件编码
+    * 选项值类型：str
+    * 默认：sys.getfilesystemencoding()
   * `account_type`: 策略账户类型 
     * 选项值类型：str
     * 默认值: STOCK
@@ -331,9 +336,6 @@ set_options(
   * `wait_lock_time_out`: 写安信DMA文件单时，获取文件锁的超时时间，单位：秒
     * 选项值类型：float
     * 默认: 5
-  * `file_encoding`: 安信文件单的文件编码
-    * 选项值类型：str
-    * 默认：sys.getfilesystemencoding()
   * `sync_retry_kwargs`: 从安信文件单同步资金、持仓、订单数据时，异常重试参数
     * 选项值类型：dict，有`max_attempts`和`attempt_internal`两个key
       * max_attempts：最大重试次数，默认3次

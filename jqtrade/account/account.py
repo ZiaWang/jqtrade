@@ -167,7 +167,7 @@ class Account(AbsAccount):
         self._orders[order_id] = order_obj
         try:
             logger.info(f"提交订单，订单id：{order_id}，code：{code}，price：{style.price}，amount：{amount}，"
-                        f"action：{action}，style：{style}")
+                        f"action：{action.value}，style：{style}")
             self._ctx.trade_gate.order(order_obj)
             self.on_order_created(order_obj)
             return order_id
@@ -278,7 +278,7 @@ class Account(AbsAccount):
         if local_order.status != OrderStatus.new:
             return
         logger.info(f"订单已报，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
-                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}，action：{remote_order.action}")
+                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}，action：{remote_order.action.value}")
 
     @staticmethod
     def _notify_deal(local_order, remote_order):
@@ -289,12 +289,12 @@ class Account(AbsAccount):
             logger.info(f"订单部分成交，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
                         f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}, "
                         f"已成数量：{remote_order.filled_amount}，成交均价：{remote_order.avg_cost}，"
-                        f"成交金额：{remote_order.deal_balance}")
+                        f"成交金额：{remote_order.deal_balance}，action: {remote_order.action.value}")
         else:
             logger.info(f"订单全部成交，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
                         f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}, "
                         f"已成数量：{remote_order.filled_amount}，成交均价：{remote_order.avg_cost}，"
-                        f"成交金额：{remote_order.deal_balance}")
+                        f"成交金额：{remote_order.deal_balance}，action: {remote_order.action.value}")
 
     @staticmethod
     def _notify_canceling(local_order, remote_order):
@@ -308,14 +308,15 @@ class Account(AbsAccount):
             return
         logger.info(f"订单已撤单，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
                     f"委托数量：{remote_order.amount}，成交数量：{remote_order.filled_amount}，"
-                    f"撤单数量：{remote_order.canceled_amount}")
+                    f"撤单数量：{remote_order.canceled_amount}，action: {remote_order.action.value}")
 
     @staticmethod
     def _notify_rejected(local_order, remote_order):
         if local_order.has_finished():
             return
         logger.info(f"订单被废单，id：{remote_order.order_id}，股票代码：{remote_order.code}，"
-                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}，废单原因：{remote_order.err_msg}")
+                    f"委托数量：{remote_order.amount}，委托价格：{remote_order.price}，"
+                    f"action: {remote_order.action.value}，废单原因：{remote_order.err_msg}")
 
     @property
     def orders(self):

@@ -38,7 +38,7 @@ class Position(AbsPosition):
     def on_order_created(self, order):
         # 订单平仓时，调整持仓可用数量，避免用户下超，方便用户查询到当前可用数量，等sync_balance同步回有些延迟
         if order.action == OrderAction.close:
-            self._available_amount -= order.amount
+            self._available_amount = max(self._available_amount - order.amount, 0)
 
     def on_order_rejected(self, order):
         # 平仓单被拒绝时，不尝试调整可用数量，因为同步订单之前会同步持仓，这里处理可用数量可能会将用户刚下的同标的单子冻结数量释放掉

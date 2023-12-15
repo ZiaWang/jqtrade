@@ -25,6 +25,10 @@ def process_initialize(context):
     run_daily(check_sync_orders, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
     run_daily(report_order_status, "every_minute")
 
+    log.info(f"pos 000001: {context.portfolio.positions['000001.XSHE']}")
+    log.info(f"pos 000001: {context.portfolio.long_positions['000001.XSHE']}")
+    log.info(f"pos 000001: {context.portfolio.short_positions['000001.XSHE']}")
+
 
 g = {
     # "code": "601988.XSHG",

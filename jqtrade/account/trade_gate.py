@@ -322,9 +322,9 @@ class AnXinDMATradeGate(AbsTradeGate):
                 continue
 
             data["cash"] = {
-                "total_asset": float(_asset_info.totalAsset),
-                "available_cash": float(_asset_info.enabledBalance),
-                "locked_cash": float(_asset_info.currentBalance) - float(_asset_info.enabledBalance),
+                "total_asset": round(float(_asset_info.totalAsset), 4),
+                "available_cash": round(float(_asset_info.enabledBalance), 4),
+                "locked_cash": round(float(_asset_info.currentBalance) - float(_asset_info.enabledBalance), 4),
             }
 
         self.check_file_exists(self._position_info_csv)
@@ -347,7 +347,7 @@ class AnXinDMATradeGate(AbsTradeGate):
 
                 "side": OrderSide.long,
                 "last_price": round(float(_pos.lastPrice), 3),
-                "position_value": round(float(_pos.mktValue), 3),
+                "position_value": round(float(_pos.mktValue), 4),
             })
 
         return data
@@ -481,7 +481,7 @@ class AnXinDMATradeGate(AbsTradeGate):
                                                            "%Y%m%d%H%M%S").strftime("%Y-%m-%d %H:%M:%S.%f")
         order["confirm_id"] = order_line.orderNo
         order["filled_amount"] = int(order_line.filledQty)
-        order["deal_balance"] = round(float(order_line.filledAmt), 3)
+        order["deal_balance"] = round(float(order_line.filledAmt), 4)
         order["canceled_amount"] = int(order_line.cancelQty)
         order["avg_cost"] = round(float(order_line.avgPrice), 3)
         order["err_msg"] = order_line.text
