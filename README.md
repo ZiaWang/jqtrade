@@ -266,7 +266,7 @@ def func(context):
     * 格式为`HH:MM:SS`格式的时间字符串，比如`09:30:30`，支持精确到秒
     * open: 等价于`09:30:00`，jqtrade默认开盘时间是09:30:00
     * close: 等价于`15:00:00`, jqtrade默认收盘时间是15:00:00
-    * every_minute: 等价于交易时间段每分钟执行(09:30:00~11:30:00, 13:00:00~15:00:00)
+    * every_minute: 等价于交易时间段每分钟执行(09:30:00\~11:30:00, 13:00:00\~15:00:00)
 
 **注意**:
 * `run_daily`只能在`process_initialize`中调用，在其他地方调用会报错。
@@ -275,7 +275,7 @@ def func(context):
 `set_options(**kwargs)`用于给策略进程传递策略选项，从而控制策略进程中的一些行为。
 set_options支持的选项分成两类，一类是策略调度模块选项(scheduler)，另一类是账户管理模块选项(account)。
 * 策略调度模块选项是针对策略调度逻辑的，用来控制策略框架的一些调度行为
-* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，参考下方[安信one quant DMA交易申请步骤](#安信one quant DMA交易申请步骤)申请开通one quant，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
+* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，参考下方[安信OneQuant交易申请步骤](#安信OneQuant交易申请步骤)申请开通one quant，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
   * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
   
 
@@ -595,7 +595,7 @@ jqtrade默认是每隔5秒同步一次最新订单状态到本地，如果用户
 sync_orders()
 ```
 
-# 安信one quant DMA交易申请步骤
+# 安信OneQuant交易申请步骤
 步骤：开户 -> 申请开通OneQuant交易系统DMA算法权限 -> 安装OneQuant -> 登录与使用 
 
 详细见下面介绍。
