@@ -46,15 +46,15 @@ email = get_package_info("__email__")
 setup(
     name="jqtrade",
     version=get_package_info("__version__"),
-    description="jqtrade<Simple trading framework on the user's local computer>",
+    description="Simple trading framework for Quant",
     packages=find_packages(exclude=("tests", "tests.*")),
     author=author,
     author_email=email,
     maintainer=author,
     maintainer_email=email,
-    license="Apache License v2",
+    license="MIT License",
     package_data={'': ['*.*']},
-    url="https://www.joinquant.com",
+    url="https://github.com/ZiaWang/jqtrade",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     install_requires=get_install_requires(),
@@ -65,6 +65,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: Unix",
+        "License :: OSI Approved :: MIT License",
     ],
     entry_points={
         "console_scripts": [
