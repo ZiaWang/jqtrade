@@ -21,7 +21,7 @@ pip install git+https://github.com/ZiaWang/jqtrade.git
 
 注意：windows系统安装时，可能会遇到安装`pyuv`库的报错，可以参考下面[pyuv安装问题](#pyuv安装问题)解决
 
-3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：[安信one quant DMA交易申请步骤](#安信one quant DMA交易申请步骤). 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
+3. 申请并安装安信one quant DMA算法使用权限. 申请步骤：[安信one quant DMA交易申请步骤](#安信onequant交易申请步骤). 如果你对python比较熟悉, 且有自己的实盘接口渠道, 可以自己实现一个jqtrade.account.AbsTradeGate的子类来替换jqtrade中默认的trade gate
 
 ## 策略代码
 完成上述安装步骤之后, 就可以开始实现策略代码了, 下面是一个策略代码的示例：
@@ -275,7 +275,7 @@ def func(context):
 `set_options(**kwargs)`用于给策略进程传递策略选项，从而控制策略进程中的一些行为。
 set_options支持的选项分成两类，一类是策略调度模块选项(scheduler)，另一类是账户管理模块选项(account)。
 * 策略调度模块选项是针对策略调度逻辑的，用来控制策略框架的一些调度行为
-* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，参考下方[安信OneQuant交易申请步骤](#安信OneQuant交易申请步骤)申请开通one quant，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
+* 账户管理模块选项是针对与账户模块和交易接口(trade gate)，jqtrade默认给用户提供了`安信DMA交易接口(AnXinDMATradeGate)`，参考下方[安信OneQuant交易申请步骤](#安信onequant交易申请步骤)申请开通one quant，即可直接使用内置`安信DMA交易接口(AnXinDMATradeGate)`
   * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
   
 
@@ -476,7 +476,7 @@ get_orders(order_id=None, code=None, status=None)
 * get_orders提供了三个过滤参数`order_id`, `code`, `status`，这三个参数可以一起组合使用("与"条件过滤)，不指定时查询所有订单
 * order_id: 内部委托id，查询指定内部id的委托
 * code: 标的代码字符串，查询指定标的的委托
-* status: 订单状态字符串，查询指定状态的委托，status支持字符串状态值或[OrderStatus类型的状态值](#OrderStatus)，状态值包括：
+* status: 订单状态字符串，查询指定状态的委托，status支持字符串状态值或[OrderStatus类型的状态值](#orderstatus)，状态值包括：
   * "new": 新创建的订单，还没有收到柜台委托确认
   * "open": 订单已收到委托确认
   * "filling": 订单成交部分，正在撮合中
