@@ -9,6 +9,7 @@ def process_initialize(context):
         account_no="880300017401",
         order_dir="C:\Ax\安信OneQuant\csvTemplate\DMA算法",
         file_encoding="GBK",
+        sync_internal=2,
     )
 
     log.info("total_assert： %s" % context.portfolio.total_value)

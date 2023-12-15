@@ -187,6 +187,7 @@ class Account(AbsAccount):
             return
 
     def sync_balance(self, *args, **kwargs):
+        logger.debug("sync_balance run")
         try:
             account_info = self._ctx.trade_gate.sync_balance()
 
@@ -215,6 +216,7 @@ class Account(AbsAccount):
             logger.exception(f"同步资金和持仓失败，error={e}")
 
     def sync_orders(self, *args, **kwargs):
+        logger.debug("sync_orders run")
         try:
             orders = self._ctx.trade_gate.sync_orders()
 

@@ -353,6 +353,9 @@ set_options(
   * `sync_order`: 是否启用订单定时同步功能
     * 选项值类型：bool
     * 默认: True
+  * `sync_internal`: 每次同步时间间隔，单位：秒
+    * 选项值类型：float
+    * 默认5秒
   * `sync_period`: 同步时间区间，不设置时，默认启动后一直同步，不管当前是否是交易时间。
     * 选项值类型：list of tuple
     * 默认: 不设置，启动后一直同步
