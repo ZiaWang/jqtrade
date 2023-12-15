@@ -33,7 +33,7 @@ def process_initialize(context):
 
     set_options(
         account_no="1234567",           # 资金账号
-        # order_dir = "D:\\交易软件\\安信OneQuant\\csvTemplate\\DMA算法\\",      # 安信one quant DMA算法文件单目录路径
+        # order_dir = "C:\Ax\国投OneQuant\csvTemplate\DMA算法",      # 安信one quant DMA算法文件单目录路径
         # file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定
     )
     
@@ -279,12 +279,12 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
   * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
   
 
-一般情况下，我们使用`安信DMA交易接口时`，set_options只需要设置`account_no`即可，如果你安装`安信one quant`时指定了自定义安装目录或者发现默认安装目录不是`C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法`，就需要通过set_options的`order_dir`来设置文件单路径，示例：
+一般情况下，我们使用`安信DMA交易接口时`，set_options只需要设置`account_no`即可，如果你安装`安信one quant`时指定了自定义安装目录或者发现默认安装目录不是`C:\Ax\国投OneQuant\csvTemplate\DMA算法\`，就需要通过set_options的`order_dir`来设置文件单路径，示例：
 ```python
 
 set_options(
     account_no="12345",         # 策略交易使用的资金账号
-    order_dir="E:\Apps\安信OneQuant\AxOneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
+    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
     file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 
@@ -312,7 +312,7 @@ set_options(
     * 选项值类型：str
   * `order_dir`: 安信DMA交易接口文件单路径（**安信one quant安装目录与此默认值不同时，必须设置此选项**）
     * 选项值类型：str
-    * 默认值：C:\Ax\安信OneQuant\AxOneQuant\csvTemplate\DMA算法
+    * 默认值：C:\Ax\国投OneQuant\csvTemplate\DMA算法
     * 注意：当在安信one quant上启动该DMA交易之后，请确认设置的导出文件目录与此默认值是否一致，若不一致，请在set_options中设置实际路径
   * `file_encoding`: 安信文件单的文件编码
     * 选项值类型：str
@@ -623,7 +623,11 @@ OneQuant股票交易佣金费率：万2.5
 ## 3. 安装OneQuant
 开通完OneQuant之后，客服会发一个OneQuant的安装包，可以根据安装引导进行安装。
 
-以下是安装示例:【TODO：补充安装截图】
+直接点击【快速安装】即可。
+
+以下是安装示例:
+
+![install_home.png](static/imgs/install_home.png)
 
 ## 4. 登录与使用
 1. 使用客服提供的账号和密码登入OneQuant
@@ -645,7 +649,7 @@ OneQuant股票交易佣金费率：万2.5
 ```python
 set_options(
     account_no="12345",         # 策略交易使用的资金账号
-    order_dir="C:\Ax\安信OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
+    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
     file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 ```

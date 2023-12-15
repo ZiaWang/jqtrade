@@ -145,7 +145,7 @@ class AnXinDMATradeGate(AbsTradeGate):
         "wait_lock_internal": 写文件单时，文件锁轮训间隔，默认0.05秒
         "wait_lock_time_out": 写文件单时，文件锁轮训超时，默认5秒
         "file_encoding": 文件单编码类型，默认使用sys.getfilesystemencoding()返回值
-        "order_dir": 文件单所在目录路径，默认是 C:\\Ax\\安信OneQuant\\AxOneQuant\\csvTemplate\\DMA算法
+        "order_dir": 文件单所在目录路径，默认是 C:\Ax\国投OneQuant\csvTemplate\DMA算法\
         "sync_retry_kwargs": 读取解析文件单失败重试次数。
             格式：
                 {
@@ -157,7 +157,7 @@ class AnXinDMATradeGate(AbsTradeGate):
     DEFAULT_ACCOUNT_TYPE = "STOCK"
     DEFAULT_COUNTER_TYPE = "UM0"
     DEFAULT_ALGO_TYPE = "DMA"
-    DEFAULT_ORDER_DIR = r"C:\Ax\安信OneQuant\csvTemplate\DMA算法"
+    DEFAULT_ORDER_DIR = r"C:\Ax\国投OneQuant\csvTemplate\DMA算法"
     DEFAULT_SYNC_RETRY_KWARGS = {
         "max_attempts": 3,
         "attempt_internal": 0.15
