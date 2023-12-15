@@ -8,7 +8,7 @@ jqtrade是一个支持用户在本地电脑上运行实盘任务的框架, 它�
 # 快速上手
 ## 安装
 1. 安装python. 需要安装3.6.2 ~ 3.9.13版本范围内的的python, 请参考python官网的安装文档安装python. 
-2. 安装jqtrade. 可以直接使用`pip`来安装jqtrade【TODO: 上传到pypi】
+2. 安装jqtrade. 可以直接使用`pip`来安装jqtrade
 ```bash
 pip install jqtrade
 ```
