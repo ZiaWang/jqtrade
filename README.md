@@ -401,7 +401,7 @@ order("600000.XSHG", -100, LimitOrderStyle(5))
 # 以买一档价格卖出100股600000.XSHG
 order("600000.XSHG", -100, LimitOrderStyle(0))
 
-# 以买一档价格买入100股000001.XSHE
+# 以卖一档价格买入100股000001.XSHE
 order("000001.XSHE", 100, LimitOrderStyle(0))
 ```
 
