@@ -151,7 +151,7 @@ jqtrade本身以及其每一个子命令都可以使用 `-h` 选项查看子命�
 获取子命令介绍：
 ```bash
 # jqtrade --help
-usage: __main__.py [-h] {start_task,get_tasks,stop_task} ...
+usage: __main__.py [-h] [-V] {start_task,get_tasks,stop_task} ...
 
 positional arguments:
   {start_task,get_tasks,stop_task}
@@ -161,6 +161,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -V, --version         获取版本信息
 ```
 
 获取start_task介绍：
@@ -396,6 +397,12 @@ order("000001.XSHE", 100, LimitOrderStyle(11.11))
 
 # 卖出100股600000.XSHG，委托价格5元
 order("600000.XSHG", -100, LimitOrderStyle(5))
+
+# 以买一档价格卖出100股600000.XSHG
+order("600000.XSHG", -100, LimitOrderStyle(0))
+
+# 以买一档价格买入100股000001.XSHE
+order("000001.XSHE", 100, LimitOrderStyle(0))
 ```
 
 **注意**:
@@ -687,16 +694,15 @@ jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需�
 
 ## 安信OneQuant常见问题
 1. 账户资金、持仓同步频率
-因为OneQuant本身的限制，资金、持仓最多5s更新一次，因此jqtrade默认5秒钟同步一次资金、持仓数据。所以可能出现查询订单已经成交了，但是查询账户并未成交，资金并未回收的现象。
+* 因为OneQuant本身的限制，资金、持仓最多5s更新一次，因此jqtrade默认5秒钟同步一次资金、持仓数据。所以可能出现查询订单已经成交了，但是查询账户并未成交，资金并未回收的现象。
    
 2. 市价单
-OneQuant目前不支持市价单。但是当下单时指定LimitOrderStyle price=0时，可以自动取对手盘作为委托价。
-即：
-* 买单：price=min(max(最新价，卖一价), 涨停价）
-* 卖单：price=max(min(最新价，买一价), 跌停价）
+* OneQuant目前不支持市价单。但是当下单时指定LimitOrderStyle price=0时，可以自动取对手盘作为委托价。即：
+  * 买单：price=min(max(最新价，卖一价), 涨停价）
+  * 卖单：price=max(min(最新价，买一价), 跌停价）
 
 3. 账户资金、持仓、订单同步时报错
-jqtrade与安信OneQuant通过文件单来交互资金、持仓、订单状态数据，jqtrade只读，OneQuant则是写数据，总会在某个时间点会遇到某一行数据解析出错的情况（OneQuant写资金/持仓文件单是先清空文件，再从头写、订单则是追加写）。 
-当jqtrade重复3次解析某一条数据失败或者检查到资金、持仓数据不完整时，就会打印报错日志提醒用户。
-* 对于资金、持仓的报错：一般我们可以不用管，因为资金、持仓每次都是全量同步的，等下次再全量同步时就OK了
-* 对于订单的报错：由于订单状态数据时增量更新，所以某一条数据更新失败时，jqtrade会跳过该条订单状态（不然在一些极端情况下，订单文件单的句柄状态会卡在此位置，导致其他订单无法更新）。因此当由于解析订单状态失败导致某些订单状态异常时，如果你无法接受这个情况，可以选择重启下jqtrade，重启jqtrade之后，程序会从头加载一遍订单文件单，自动修复异常订单状态。
+* jqtrade与安信OneQuant通过文件单来交互资金、持仓、订单状态数据，jqtrade只读，OneQuant则是写数据，总会在某个时间点会遇到某一行数据解析出错的情况（OneQuant写资金/持仓文件单是先清空文件，再从头写、订单则是追加写）。 
+* 当jqtrade重复3次解析某一条数据失败或者检查到资金、持仓数据不完整时，就会打印报错日志提醒用户。
+  * 对于资金、持仓的报错：一般我们可以不用管，因为资金、持仓每次都是全量同步的，等下次再全量同步时就OK了
+  * 对于订单的报错：由于订单状态数据时增量更新，所以某一条数据更新失败时，jqtrade会跳过该条订单状态（不然在一些极端情况下，订单文件单的句柄状态会卡在此位置，导致其他订单无法更新）。因此当由于解析订单状态失败导致某些订单状态异常时，如果你无法接受这个情况，可以选择重启下jqtrade，重启jqtrade之后，程序会从头加载一遍订单文件单，自动修复异常订单状态。
