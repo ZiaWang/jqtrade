@@ -382,8 +382,8 @@ order(code, amount, style=None, side='long')
 * code: 股票代码字符串，上交所后缀`XSHG`，深交所后缀`XSHE`，例如："000001.XSHE"、"600000.XSHG"
 * amount: 委托数量，正数表示买入，负数表示卖出，不能为0
 * style: 类似聚宽官网style参数，值类型:
-    * LimitOrderStyle: 限价单，需要指定订单价格。例如: LimitOrderStyle(11.11)
-    * MarketOrderStyle: 市价单，不需要指定订单价格。例如: MarketOrderStyle()
+    * LimitOrderStyle: 限价单，需要指定订单价格。例如: LimitOrderStyle(11.11)。使用安信OneQuant时，设置style=LimitOrderStyle(0)，委托价格会自动设置为对手盘的一档价格下单
+    * MarketOrderStyle: 市价单，不需要指定订单价格。例如: MarketOrderStyle()。安信OneQuant目前不支持市价单，但可以通过设置style=LimitOrderStyle(0)的方式以对手盘的一档价格下单
 * side: 买卖方向，支持"long"、"short"两种，目前jqtrade仅支持"long"方向的交易
 
 返回值:
@@ -666,3 +666,37 @@ jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需�
   * python3.7 whl文件：[pyuv-1.4.0-cp37-cp37m-win_amd64.whl](static/whls/pyuv-1.4.0-cp37-cp37m-win_amd64.whl)
   * python3.8 whl文件：[pyuv-1.4.0-cp38-cp38-win_amd64.whl](static/whls/pyuv-1.4.0-cp38-cp38-win_amd64.whl)
   * python3.9 whl文件：[pyuv-1.4.0-cp39-cp39-win_amd64.whl](static/whls/pyuv-1.4.0-cp39-cp39-win_amd64.whl)
+
+## 与聚宽策略代码的兼容性和需要注意的地方
+与聚宽官网策略的差异：
+* 策略调度：
+  * 聚宽官网策略支持initialize函数，jqtrade不支持，但两者都支持process_initialize函数，用户策略进程每次启动时率先调用
+  * jqtrade的run_daily支持time="every_minute"，聚宽官网不支持，但两者都支持具体时间(HH:MM:SS)，open、close
+  * 聚宽官网的策略进程（模拟盘）会在空闲时间段自动退出，等下次定时任务快到的时候再调度起来，jqtrade策略进程一旦启动，就会一直运行，直到手动退出
+* 下单：
+  * 聚宽官网下单时，会检查并调整下单数量，jqtrade不会调整，因此用户需要自己在策略代码中检查调整
+  * jqtrade仅提供了order函数，只支持按股票数量下单，不支持聚宽官网按市值、按目标持仓量下单的方式
+  * 聚宽官网下单会返回Order对象，jqtrade下单会返回order id
+* 其他：
+  * context.portfolio对象，jqtrade仅支持long_positions、short_positions、positions、total_assert、available_cash、locked_cash，理论上 position_value = total_assert - available_cash - locked_cash。但由于安信OneQuant持仓、资金在两个文件单中更新，因此直接使用持仓计算的持仓市值跟同一时间点资金数据计算出来的持仓市值可能会不太一致。
+  * UserPosition对象：
+      * jqtrade的acc_avg_cost/avg_cost直接取自DMA对应的安信柜台，和聚宽官网计算可能有差异，更接近acc_avg_cost
+      * total_amount属性，jqtrade直接取得DMA文件单的持仓量，该持仓量含有挂单冻结仓位，聚宽官网不含。这里注意一个问题：当前持仓数量 = 当前可用数量 + 今日开仓量 + 当前挂单锁住量，而后两者需要用订单信息计算，由于jqtrade与安信柜台通过文件单同步，订单和持仓分别在不同文件中，为了避免问题复杂和引入新问题，不再提供当日开仓量、当前锁定持仓量
+      * jqtrade不支持聚宽官网的这些字段：init_time、transact_time、hold_cost、today_amount、lock_amount、pindex等
+  * Order对象：jqtrade不支持avg_cost属性，订单成交均价使用avg_price字段，成交量使用filled_amount字段，聚宽官网订单成交均价使用price字段，成交量使用filled字段
+
+## 安信OneQuant常见问题
+1. 账户资金、持仓同步频率
+因为OneQuant本身的限制，资金、持仓最多5s更新一次，因此jqtrade默认5秒钟同步一次资金、持仓数据。所以可能出现查询订单已经成交了，但是查询账户并未成交，资金并未回收的现象。
+   
+2. 市价单
+OneQuant目前不支持市价单。但是当下单时指定LimitOrderStyle price=0时，可以自动取对手盘作为委托价。
+即：
+* 买单：price=min(max(最新价，卖一价), 涨停价）
+* 卖单：price=max(min(最新价，买一价), 跌停价）
+
+3. 账户资金、持仓、订单同步时报错
+jqtrade与安信OneQuant通过文件单来交互资金、持仓、订单状态数据，jqtrade只读，OneQuant则是写数据，总会在某个时间点会遇到某一行数据解析出错的情况（OneQuant写资金/持仓文件单是先清空文件，再从头写、订单则是追加写）。 
+当jqtrade重复3次解析某一条数据失败或者检查到资金、持仓数据不完整时，就会打印报错日志提醒用户。
+* 对于资金、持仓的报错：一般我们可以不用管，因为资金、持仓每次都是全量同步的，等下次再全量同步时就OK了
+* 对于订单的报错：由于订单状态数据时增量更新，所以某一条数据更新失败时，jqtrade会跳过该条订单状态（不然在一些极端情况下，订单文件单的句柄状态会卡在此位置，导致其他订单无法更新）。因此当由于解析订单状态失败导致某些订单状态异常时，如果你无法接受这个情况，可以选择重启下jqtrade，重启jqtrade之后，程序会从头加载一遍订单文件单，自动修复异常订单状态。

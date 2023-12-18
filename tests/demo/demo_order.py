@@ -7,7 +7,7 @@ def process_initialize(context):
 
     set_options(
         account_no="880300017401",
-        order_dir="C:\Ax\安信OneQuant\csvTemplate\DMA算法",
+        # order_dir="C:\Ax\安信OneQuant\csvTemplate\DMA算法",
         file_encoding="GBK",
     )
 
@@ -20,19 +20,25 @@ def process_initialize(context):
     run_daily(cancel_open_orders, (datetime.datetime.now() + datetime.timedelta(seconds=1)).strftime("%H:%M:%S"))
     run_daily(do_order, (datetime.datetime.now() + datetime.timedelta(seconds=5)).strftime("%H:%M:%S"))
     run_daily(do_cancel, (datetime.datetime.now() + datetime.timedelta(seconds=15)).strftime("%H:%M:%S"))
-    run_daily(check_orders, (datetime.datetime.now() + datetime.timedelta(seconds=20)).strftime("%H:%M:%S"))
+    # run_daily(check_orders, (datetime.datetime.now() + datetime.timedelta(seconds=20)).strftime("%H:%M:%S"))
     run_daily(check_sync_balance, (datetime.datetime.now() + datetime.timedelta(seconds=25)).strftime("%H:%M:%S"))
-    run_daily(check_sync_orders, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
-    run_daily(report_order_status, "every_minute")
+    run_daily(check_sync_balance, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
+    # run_daily(check_sync_orders, (datetime.datetime.now() + datetime.timedelta(seconds=30)).strftime("%H:%M:%S"))
+    # run_daily(report_order_status, "every_minute")
 
     log.info(f"pos 000001: {context.portfolio.positions['000001.XSHE']}")
     log.info(f"pos 000001: {context.portfolio.long_positions['000001.XSHE']}")
     log.info(f"pos 000001: {context.portfolio.short_positions['000001.XSHE']}")
+    log.info(f"pos 000001: {context.portfolio.short_positions['511880.XSHG']}")
+    log.info(f"pos 000001: {context.portfolio.short_positions['511880.XSHG']}")
+    log.info(f"pos 000001: {context.portfolio.short_positions['511880.XSHG']}")
 
 
 g = {
-    # "code": "601988.XSHG",
     "code": "511880.XSHG",
+    # "price": 101.790,
+    # "amount": 100,
+    #
     "price": 101.770,
     "amount": -100,
 }
@@ -75,10 +81,11 @@ def check_sync_balance(context):
 
     for _code, _pos in context.portfolio.long_positions.items():
         log.info(f"long pos: {_code}, {_pos}")
-        log.info(f"--- value={_pos.value}, price={_pos.price}")
 
     for _code, _pos in context.portfolio.short_positions.items():
         log.info(f"short pos: {_code}, {_pos}")
+
+    log.info(f"511880.XSHG pos: {context.portfolio.long_positions['511880.XSHG']}")
 
 
 def check_sync_orders(context):
