@@ -665,9 +665,10 @@ set_options(
 
 # 数据接入
 建议用户使用聚宽提供的JQDataSDK作为数据源，因为使用JQDataSDK可以更大程度还原聚宽官网平台以及一创聚宽上运行的策略效果。所以在数据上，建议使用聚宽的数据接口（JQDataSDK），好处就是在数据是聚宽生产的，不用考虑策略迁移到本地运作时需要重新兼容数据以及数据差异导致策略效果差异。但成本就是JQDataSDK在聚宽是商业化运作项目，正式使用时会需要付费，具体数据联系聚宽工作人员可以按套餐采购。ps.客服的服务还是非常好的，数据质量就和聚宽平台使用的一样，还是非常高的，另外用下来发现本地数据提供的数据种类比聚宽平台的多，可能是商业化程度不一样。
+
 以下是聚宽官网能数据申请入口和API文档，直接注册申请就可以，聚宽还提供了免费测试数据，如果需要实时或更多数据的话，可以JQData运营微信申请更多测试数据：
 * 申请试用：[JQDataSDK申请试用](https://www.joinquant.com/default/index/sdk)
-* API文档：[SQDataSDK说明文档](https://www.joinquant.com/help/api/doc?name=JQDatadoc)
+* API文档：[JQDataSDK说明文档](https://www.joinquant.com/help/api/doc?name=JQDatadoc)
 
 如果策略本身对数据源要求不高的，可以选择其他数据源接入策略，本地DIY最大的好处就是自由选择的权利比较大
 
