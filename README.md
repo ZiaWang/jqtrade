@@ -673,6 +673,9 @@ set_options(
 如果策略本身对数据源要求不高的，可以选择其他数据源接入策略，本地DIY最大的好处就是自由选择的权利比较大
 
 # 常见问题
+
+如果遇到了下面没有提到过的问题，请在gitee或github上创建issue，提交问题详情（建议提供详细的异常栈或日志输出）。
+
 ## pyuv安装问题
 jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需要使用到c++的一些运行时组件，如果电脑上没有安装c++运行时组件，就会安装报错。
 报错提示示例：`error: Microsoft Visual c++ 14.0 or greater is required. Get it with ... `
