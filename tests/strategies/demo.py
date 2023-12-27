@@ -16,7 +16,7 @@ def process_initialize(context):
     run_daily(func_every_minute, "every_minute")
 
 
-def process_exit():
+def process_exit(context):
     log.info("process_exit run")
 
 

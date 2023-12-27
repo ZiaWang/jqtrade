@@ -141,7 +141,8 @@ def run_strategy(path):
                       start=start,
                       end=end,
                       task_name=options.get("task_name", "test_task"),
-                      config=None)
+                      config=None,
+                      out=None)
 
     if options.get("use_account"):
         from jqtrade.account.account import Account

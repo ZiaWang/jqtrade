@@ -95,7 +95,7 @@ def context():
     from jqtrade.scheduler.loop import EventLoop
     from jqtrade.scheduler.loader import Loader
     from jqtrade.scheduler.event_source import EventSourceScheduler
-    ctx = Context("test", EventBus(), EventLoop(), EventSourceScheduler(), Loader("../demo/demo.py"), False)
+    ctx = Context("test", EventBus(), EventLoop(), EventSourceScheduler(), Loader("../demo/demo.py"), False, None, None)
     strategy = Strategy(ctx)
 
 

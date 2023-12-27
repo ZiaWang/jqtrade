@@ -40,6 +40,8 @@ class EventSource(object):
 
         self._event_changed_callback = []
 
+        self._has_gen_his_days = False
+
     def setup(self):
         if self._start is None or not config.ENABLE_HISTORY_START:
             self._start = datetime.datetime.now()
@@ -53,14 +55,28 @@ class EventSource(object):
             return
 
         self._events = []
+        self._has_gen_his_days = False
         self._days = self._get_days()
         self._need_regenerate_events = False
 
     def _get_days(self, count=config.EVENT_DAYS_COUNT):
-        start = self._start.date()
         days = []
+
+        if config.ENABLE_HISTORY_START or self._end:
+            # 历史模式下，日期只有效生成一次
+            if self._has_gen_his_days:
+                return []
+            start = self._start.date()
+            end = self._end.date() if self._end else None
+            count = (end - start).days + 1 if end else count
+        else:
+            start = datetime.date.today()
+
         for _delta in range(count):
             days.append(start + datetime.timedelta(days=_delta))
+
+        self._has_gen_his_days = True
+
         return days
 
     def daily(self, event_cls, time_expr):
@@ -105,6 +121,9 @@ class EventSource(object):
         while len(self._events) == 0:
             if len(self._days) == 0:
                 self._days = self._get_days()
+
+            if not self._days:
+                break
 
             day = self._days.pop(0)
             self.add_daily_events(day)
