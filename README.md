@@ -35,8 +35,8 @@ def process_initialize(context):
 
     set_options(
         account_no="1234567",           # 资金账号
-        # order_dir = "C:\Ax\国投OneQuant\csvTemplate\DMA算法",      # 安信one quant DMA算法文件单目录路径
-        # file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定
+        # order_dir = "C:\Ax\国投OneQuant\csvTemplate\DMA算法",      # 安信one quant DMA算法单目录路径
+        # file_encoding="GBK",          # 安信one quant DMA算法单编码，如果系统文件编码不是GBK的话，这里需要指定
     )
     
     run_daily(before_market_open, "open-30m")
@@ -282,13 +282,13 @@ set_options支持的选项分成两类，一类是策略调度模块选项(sched
   * jqtrade支持用户自己实现交易接口，用户只需创建`account.trade_gate.AbsTradeGate`子类，在子类中根据自己的交易接口实现相关接口即可
   
 
-一般情况下，我们使用`安信DMA交易接口时`，set_options只需要设置`account_no`即可，如果你安装`安信one quant`时指定了自定义安装目录或者发现默认安装目录不是`C:\Ax\国投OneQuant\csvTemplate\DMA算法\`，就需要通过set_options的`order_dir`来设置文件单路径，示例：
+一般情况下，我们使用`安信DMA交易接口时`，set_options只需要设置`account_no`即可，如果你安装`安信one quant`时指定了自定义安装目录或者发现默认安装目录不是`C:\Ax\国投OneQuant\csvTemplate\DMA算法\`，就需要通过set_options的`order_dir`来设置算法单路径，示例：
 ```python
 
 set_options(
     account_no="12345",         # 策略交易使用的资金账号
-    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
-    file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
+    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易算法单路径
+    file_encoding="GBK",          # 安信one quant DMA算法算法单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 
 ```
@@ -313,11 +313,11 @@ set_options(
 * `安信DMA交易接口(AnXinDMATradeGate)`专用选项:
   * `account_no`: 资金账号（**使用安信交易接口时，必须设置此选项**）
     * 选项值类型：str
-  * `order_dir`: 安信DMA交易接口文件单路径（**安信one quant安装目录与此默认值不同时，必须设置此选项**）
+  * `order_dir`: 安信DMA交易接口算法单路径（**安信one quant安装目录与此默认值不同时，必须设置此选项**）
     * 选项值类型：str
     * 默认值：C:\Ax\国投OneQuant\csvTemplate\DMA算法
-    * 注意：当在安信one quant上启动该DMA交易之后，请确认设置的导出文件目录与此默认值是否一致，若不一致，请在set_options中设置实际路径
-  * `file_encoding`: 安信文件单的文件编码
+    * 注意：当在安信one quant上启动该DMA交易之后，请确认设置的导出算法单目录与此默认值是否一致，若不一致，请在set_options中设置实际路径
+  * `file_encoding`: 安信算法单的文件编码
     * 选项值类型：str
     * 默认：sys.getfilesystemencoding()
   * `account_type`: 策略账户类型 
@@ -337,20 +337,20 @@ set_options(
     * 选项值类型: str
     * 默认值: DMA
     * 注意：当前仅支持DMA
-  * `wait_lock_internal`: 写安信DMA文件单时，要用到文件锁，避免文件被同时多线程写，此选项为文件锁轮训间隔，单位：秒
+  * `wait_lock_internal`: 写安信DMA算法单时，要用到文件锁，避免文件被同时多线程写，此选项为文件锁轮训间隔，单位：秒
     * 选项值类型：float
     * 默认: 0.05
-  * `wait_lock_time_out`: 写安信DMA文件单时，获取文件锁的超时时间，单位：秒
+  * `wait_lock_time_out`: 写安信DMA算法单时，获取文件锁的超时时间，单位：秒
     * 选项值类型：float
     * 默认: 5
-  * `sync_retry_kwargs`: 从安信文件单同步资金、持仓、订单数据时，异常重试参数
+  * `sync_retry_kwargs`: 从安信算法单同步资金、持仓、订单数据时，异常重试参数
     * 选项值类型：dict，有`max_attempts`和`attempt_internal`两个key
       * max_attempts：最大重试次数，默认3次
       * attempt_internal：重试间隔，单位：秒，默认0.15秒
   * `ignore_error_line`: 解析订单状态文件时，是否忽略掉解析失败的订单信息
     * 默认: True，将忽略解析失败的订单状态信息。
     * 注意: 
-        * 一般解析失败都是由于文件编码异常导致，通过设置`file_encoding`选项来设置文件单对应的正确编码，然后重启策略进程。策略进程重启后，
+        * 一般解析失败都是由于文件编码异常导致，通过设置`file_encoding`选项来设置算法单对应的正确编码，然后重启策略进程。策略进程重启后，
       会从头开始重新加载订单状态。
         * `ignore_error_line=True`时，解析不了的订单状态数据会在当前策略进程生命周期内被忽略，要想重新加载该条订单状态，需重启策略进程。
 * 账户管理模块专用选项:
@@ -654,12 +654,12 @@ OneQuant股票交易佣金费率：万2.5
 4. 点击【启动】后会进入算法单的启动前设置页面，我们可以设置算法单的文件目录（一般不需要修改，使用默认路径即可），然后再点击最下面的启动，即可启动DMA程序。
 ![dma.png](static/imgs/dma.png)
 
-5. 启动DMA算法之后，我们就可以使用jqtrade启动我们的策略了，需要注意算法单文件目录路径是否与jqtrade默认的文件单路径一样，如果不一样的话，需要在策略中使用set_options设置`order_dir`选项
+5. 启动DMA算法之后，我们就可以使用jqtrade启动我们的策略了，需要注意算法单目录路径是否与jqtrade默认的算法单路径一样，如果不一样的话，需要在策略中使用set_options设置`order_dir`选项
 ```python
 set_options(
     account_no="12345",         # 策略交易使用的资金账号
-    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易文件单路径
-    file_encoding="GBK",          # 安信one quant DMA算法文件单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
+    order_dir="C:\Ax\国投OneQuant\csvTemplate\DMA算法",         # 安信one quant DMA交易算法单路径
+    file_encoding="GBK",          # 安信one quant DMA算法算法单编码，如果系统文件编码不是GBK的话，这里需要指定，默认是sys.getfilesystemencoding()
 )
 ```
 
@@ -699,10 +699,10 @@ jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需�
   * jqtrade仅提供了order函数，只支持按股票数量下单，不支持聚宽官网按市值、按目标持仓量下单的方式
   * 聚宽官网下单会返回Order对象，jqtrade下单会返回order id
 * 其他：
-  * context.portfolio对象，jqtrade仅支持long_positions、short_positions、positions、total_assert、available_cash、locked_cash，理论上 position_value = total_assert - available_cash - locked_cash。但由于安信OneQuant持仓、资金在两个文件单中更新，因此直接使用持仓计算的持仓市值跟同一时间点资金数据计算出来的持仓市值可能会不太一致。
+  * context.portfolio对象，jqtrade仅支持long_positions、short_positions、positions、total_assert、available_cash、locked_cash，理论上 position_value = total_assert - available_cash - locked_cash。但由于安信OneQuant持仓、资金在两个算法单中更新，因此直接使用持仓计算的持仓市值跟同一时间点资金数据计算出来的持仓市值可能会不太一致。
   * UserPosition对象：
       * jqtrade的acc_avg_cost/avg_cost直接取自DMA对应的安信柜台，和聚宽官网计算可能有差异，更接近acc_avg_cost
-      * total_amount属性，jqtrade直接取得DMA文件单的持仓量，该持仓量含有挂单冻结仓位，聚宽官网不含。这里注意一个问题：当前持仓数量 = 当前可用数量 + 今日开仓量 + 当前挂单锁住量，而后两者需要用订单信息计算，由于jqtrade与安信柜台通过文件单同步，订单和持仓分别在不同文件中，为了避免问题复杂和引入新问题，不再提供当日开仓量、当前锁定持仓量
+      * total_amount属性，jqtrade直接取得DMA算法单的持仓量，该持仓量含有挂单冻结仓位，聚宽官网不含。这里注意一个问题：当前持仓数量 = 当前可用数量 + 今日开仓量 + 当前挂单锁住量，而后两者需要用订单信息计算，由于jqtrade与安信柜台通过算法单同步，订单和持仓分别在不同算法单文件中，为了避免问题复杂和引入新问题，不再提供当日开仓量、当前锁定持仓量
       * jqtrade不支持聚宽官网的这些字段：init_time、transact_time、hold_cost、today_amount、lock_amount、pindex等
   * Order对象：jqtrade不支持avg_cost属性，订单成交均价使用avg_price字段，成交量使用filled_amount字段，聚宽官网订单成交均价使用price字段，成交量使用filled字段
 
@@ -716,12 +716,12 @@ jqtrade内部使用pyuv来驱动调度框架，而windows系统pyuv的安装需�
   * 卖单：price=max(min(最新价，买一价), 跌停价）
 
 3. 账户资金、持仓、订单同步时报错
-* jqtrade与安信OneQuant通过文件单来交互资金、持仓、订单状态数据，jqtrade只读，OneQuant则是写数据，总会在某个时间点会遇到某一行数据解析出错的情况（OneQuant写资金/持仓文件单是先清空文件，再从头写、订单则是追加写）。 
+* jqtrade与安信OneQuant通过算法单来交互资金、持仓、订单状态数据，jqtrade只读，OneQuant则是写数据，总会在某个时间点会遇到某一行数据解析出错的情况（OneQuant写资金/持仓算法单是先清空文件，再从头写、订单则是追加写）。 
 * 当jqtrade重复3次解析某一条数据失败或者检查到资金、持仓数据不完整时，就会打印报错日志提醒用户。
   * 对于资金、持仓的报错：一般我们可以不用管，因为资金、持仓每次都是全量同步的，等下次再全量同步时就OK了
-  * 对于订单的报错：由于订单状态数据时增量更新，所以某一条数据更新失败时，jqtrade会跳过该条订单状态（不然在一些极端情况下，订单文件单的句柄状态会卡在此位置，导致其他订单无法更新）。因此当由于解析订单状态失败导致某些订单状态异常时，如果你无法接受这个情况，可以选择重启下jqtrade，重启jqtrade之后，程序会从头加载一遍订单文件单，自动修复异常订单状态。
+  * 对于订单的报错：由于订单状态数据时增量更新，所以某一条数据更新失败时，jqtrade会跳过该条订单状态（不然在一些极端情况下，订单算法单的句柄状态会卡在此位置，导致其他订单无法更新）。因此当由于解析订单状态失败导致某些订单状态异常时，如果你无法接受这个情况，可以选择重启下jqtrade，重启jqtrade之后，程序会从头加载一遍订单算法单，自动修复异常订单状态。
 
 4. 日志报错"ValueError: trade_gate.sync_balance未返回资金数据"，这种报错日志可能是以下情况导致的：
-* OneQuant的文件单目录与策略设置的文件单目录不一致，如果策略中没有设置过文件单目录，jqtrade会使用默认目录："C:\Ax\国投OneQuant\csvTemplate\DMA算法\"，请检查OneQuant DMA文件单目录与策略读取的目录是否一致
-* OneQuant资金账号没有登陆，资金账号没有登陆时，OneQuant不会导出该资金账号的数据到文件单
+* OneQuant的算法单目录与策略设置的算法单目录不一致，如果策略中没有设置过算法单目录，jqtrade会使用默认目录："C:\Ax\国投OneQuant\csvTemplate\DMA算法\"，请检查OneQuant DMA算法单目录与策略读取的目录是否一致
+* OneQuant资金账号没有登陆，资金账号没有登陆时，OneQuant不会导出该资金账号的数据到算法单
 * 策略中"set_options"设置的account_no资金账号与OneQuant中的资金账号不一致
